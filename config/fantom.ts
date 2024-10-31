@@ -14,8 +14,7 @@ export default <NetworkData>{
     subgraphs: {
         startDate: '2021-10-08',
         balancer: [
-            `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_FANTOM}/deployments/id/QmYN8qV7PEokFeQvhhWMinYD5wsspP1Sc87pGKEvAmjSCJ`,
-            `https://subgraph.satsuma-prod.com/${env.SATSUMA_API_KEY}/balancer/balancer-v2-fantom/api`,
+            `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_FANTOM}/deployments/id/Qme9r1RTFZ6hEZ4ebPSmo3J81FNHhjeNZs5nBaSGTzb2hb`,
         ],
         beetsBar: `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_FANTOM}/deployments/id/QmXcxzZioHXV5ts2UcG6gNNEayoaZ9ip7D9JvPS88K2HXe`,
         blocks: `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_FANTOM}/subgraphs/id/3drjZDpA9hAuYGA19ttEkhW432mVe2XHy5YarBDVYHbz`,
@@ -68,8 +67,8 @@ export default <NetworkData>{
             '0xb7c2ddb1ebac1056231ef22c1b0a13988537a274', // new tarot
         ],
     },
-    rpcUrl: env.ALCHEMY_API_KEY
-        ? `https://fantom-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=fantom&dkey=${env.DRPC_API_KEY}`
         : `https://rpc.ankr.com/fantom`,
     rpcMaxBlockRange: 1000,
     protocolToken: 'beets',
@@ -119,24 +118,6 @@ export default <NetworkData>{
         ],
     },
     avgBlockSpeed: 1,
-    sor: {
-        env: {
-            main: {
-                url: 'https://2bz6hsr2y54svqgow7tbwwsrta0icouy.lambda-url.ca-central-1.on.aws/',
-                maxPools: 8,
-                forceRefresh: false,
-                gasPrice: BigNumber.from(10),
-                swapGas: BigNumber.from('1000000'),
-            },
-            canary: {
-                url: 'https://mep53ds2noe6rhicd67q7raqhq0dkupc.lambda-url.eu-central-1.on.aws/',
-                maxPools: 8,
-                forceRefresh: false,
-                gasPrice: BigNumber.from(10),
-                swapGas: BigNumber.from('1000000'),
-            },
-        },
-    },
     ybAprConfig: {
         sftmx: {
             tokens: {
@@ -202,9 +183,6 @@ export default <NetworkData>{
                     },
                 },
             },
-        },
-        yearn: {
-            sourceUrl: 'https://api.yexporter.io/v1/chains/250/vaults/all',
         },
         defaultHandlers: {
             ankrETH: {

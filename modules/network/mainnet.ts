@@ -4,6 +4,7 @@ import { tokenService } from '../token/token.service';
 import {
     BoostedPoolAprService,
     SwapFeeAprService,
+    SwapFeeFromEventsAprService,
     GaugeAprService,
     YbTokensAprService,
     VeBalProtocolAprService,
@@ -27,7 +28,7 @@ export const mainnetNetworkConfig: NetworkConfig = {
     poolAprServices: [
         new YbTokensAprService(data.ybAprConfig, data.chain.prismaId),
         new BoostedPoolAprService(),
-        new SwapFeeAprService(),
+        new SwapFeeFromEventsAprService(),
         new GaugeAprService(tokenService, [data.bal!.address]),
         new VeBalProtocolAprService(data.rpcUrl),
         new VeBalVotingAprService(),
@@ -38,7 +39,7 @@ export const mainnetNetworkConfig: NetworkConfig = {
         new UserSyncVebalLockBalanceService(),
     ],
     services: {
-        balancerSubgraphService: new BalancerSubgraphService(data.subgraphs.balancer, 1),
+        balancerSubgraphService: new BalancerSubgraphService(data.subgraphs.balancer, 'MAINNET'),
     },
     /*
     For sub-minute jobs we set the alarmEvaluationPeriod and alarmDatapointsToAlarm to 1 instead of the default 3.
@@ -79,7 +80,7 @@ export const mainnetNetworkConfig: NetworkConfig = {
             interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(5, 'minutes'),
         },
         {
-            name: 'update-liquidity-24h-ago-for-all-pools',
+            name: 'update-liquidity-24h-ago-v2',
             interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(5, 'minutes'),
         },
         {
@@ -123,6 +124,10 @@ export const mainnetNetworkConfig: NetworkConfig = {
         {
             name: 'sync-vebal-balances',
             interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(9, 'minutes') : every(3, 'minutes'),
+        },
+        {
+            name: 'sync-vebal-snapshots',
+            interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(2, 'minutes'),
         },
         {
             name: 'sync-vebal-totalSupply',

@@ -15,7 +15,6 @@ export default <NetworkData>{
         startDate: '2022-01-01',
         balancer: [
             `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmWUgkiUM5c3BW1Z51DUkZfnyQfyfesE8p3BRnEtA9vyPL`,
-            `https://subgraph.satsuma-prod.com/${env.SATSUMA_API_KEY}/balancer/balancer-v2-optimism/api`,
         ],
         beetsBar: 'https://',
         blocks: 'https://api.studio.thegraph.com/query/48427/optimism-blocks/version/latest',
@@ -37,8 +36,8 @@ export default <NetworkData>{
         platformId: 'optimistic-ethereum',
         excludedTokenAddresses: ['0x97513e975a7fa9072c72c92d8000b0db90b163c5'], //multibeets
     },
-    rpcUrl: env.ALCHEMY_API_KEY
-        ? `https://opt-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=optimism&dkey=${env.DRPC_API_KEY}`
         : 'https://mainnet.optimism.io',
     rpcMaxBlockRange: 2000,
     protocolToken: 'beets',
@@ -77,24 +76,6 @@ export default <NetworkData>{
         excludedFarmIds: [],
     },
     avgBlockSpeed: 1,
-    sor: {
-        env: {
-            main: {
-                url: 'https://nplks2oknz5lhxn6kpgxbfrxgm0hzicm.lambda-url.ca-central-1.on.aws/',
-                maxPools: 8,
-                forceRefresh: false,
-                gasPrice: BigNumber.from(10),
-                swapGas: BigNumber.from('1000000'),
-            },
-            canary: {
-                url: 'https://svlitjilcr5qtp7iolimlrlg7e0ipupj.lambda-url.eu-central-1.on.aws/',
-                maxPools: 8,
-                forceRefresh: false,
-                gasPrice: BigNumber.from(10),
-                swapGas: BigNumber.from('1000000'),
-            },
-        },
-    },
     ybAprConfig: {
         aave: {
             v3: {
@@ -139,6 +120,12 @@ export default <NetworkData>{
                 // and search for the vault address in the link: https://api.beefy.finance/vaults
             },
         },
+        defillama: [
+            {
+                defillamaPoolId: '46f3828a-cbf6-419e-8399-a83b905bf556',
+                tokenAddress: '0x5a7a183b6b44dc4ec2e3d2ef43f98c5152b1d76d',
+            },
+        ],
         reaper: {
             subgraphSource: {
                 subgraphUrl: 'https://api.thegraph.com/subgraphs/name/byte-masons/multi-strategy-vaults-optimism',
@@ -201,8 +188,8 @@ export default <NetworkData>{
             },
             rETH: {
                 tokenAddress: '0x9bcef72be871e61ed4fbbc7630889bee758eb81d',
-                sourceUrl: 'https://rocketpool.net/api/mainnet/payload',
-                path: 'rethAPR',
+                sourceUrl: 'https://api.rocketpool.net/mainnet/reth/apr',
+                path: 'yearlyAPR',
                 isIbYield: true,
             },
             overnightDAIPlus: {

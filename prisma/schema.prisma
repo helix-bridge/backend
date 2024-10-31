@@ -40,8 +40,12 @@ model PrismaLastBlockSynced {
 
 enum PrismaLastBlockSyncedCategory {
     POOLS
+    POOLS_V3
     FARMS
     COW_AMM_POOLS
+    COW_AMM_JOIN_EXITS
+    COW_AMM_SWAPS
+    COW_AMM_SNAPSHOTS
 }
 
 
@@ -97,6 +101,8 @@ model PrismaPool {
     tokens              PrismaPoolToken[]
 
     dynamicData         PrismaPoolDynamicData?
+
+    liquidityManagement  Json @default("{}")
 
     snapshots           PrismaPoolSnapshot[]
     swaps               PrismaPoolSwap[]
@@ -223,6 +229,8 @@ model PrismaPoolToken {
 
     dynamicData         PrismaPoolTokenDynamicData?
 
+    scalingFactor               String?
+
     @@index([poolId, chain])
     @@index([address, chain])
     @@index([nestedPoolId, chain])
@@ -320,6 +328,9 @@ model PrismaPoolAprRange {
 
 enum PrismaPoolAprType {
     SWAP_FEE
+    SWAP_FEE_24H
+    SWAP_FEE_7D
+    SWAP_FEE_30D
     NATIVE_REWARD
     THIRD_PARTY_REWARD
     IB_YIELD
@@ -328,6 +339,9 @@ enum PrismaPoolAprType {
     AURA
     MERKL
     SURPLUS
+    SURPLUS_24H
+    SURPLUS_7D
+    SURPLUS_30D
 }
 
 enum PrismaPoolAprItemGroup {
@@ -853,6 +867,8 @@ model PrismaUser {
     stakedBalances          PrismaUserStakedBalance[]
     
     veBalBalance            PrismaVeBalUserBalance[]
+
+    veBalBalanceSnapshots   PrismaVeBalUserBalanceSnapshot[]
 }
 
 
@@ -957,6 +973,17 @@ model PrismaUserRelicSnapshot {
     level                   Int
 }
 
+model PrismaVeBalUserBalanceSnapshot {
+    @@id([userAddress, timestamp])
+    userAddress             String
+    user                    PrismaUser          @relation(fields:[userAddress], references: [address])
+    chain                   Chain               
+    timestamp               Int
+
+    bias                    String
+    slope                   String
+    balance                 String
+}
 
 model PrismaVeBalUserBalance {
     @@id([id, chain])

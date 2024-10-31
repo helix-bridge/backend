@@ -1,11 +1,12 @@
-import { Multicaller3 } from '../../web3/multicaller3';
-import { BigNumber } from '@ethersproject/bignumber';
+import { Multicaller3Viem, IMulticaller } from '../../web3/multicaller-viem';
 import BalancerQueries from '../abi/BalancerQueries.json';
 import { MathSol, WAD, ZERO_ADDRESS } from '@balancer/sdk';
 import { parseEther, parseUnits } from 'viem';
+import { Chain } from '@prisma/client';
 
 interface PoolInput {
     id: string;
+    chain: Chain;
     address: string;
     tokens: {
         address: string;
@@ -59,9 +60,9 @@ interface Token {
 }
 
 interface OnchainData {
-    effectivePriceAmountOut: BigNumber;
-    aToBAmountOut: BigNumber;
-    bToAAmountOut: BigNumber;
+    effectivePriceAmountOut: bigint;
+    aToBAmountOut: bigint;
+    bToAAmountOut: bigint;
 }
 
 export async function fetchTokenPairData(pools: PoolInput[], balancerQueriesAddress: string, batchSize = 1024) {
@@ -71,7 +72,7 @@ export async function fetchTokenPairData(pools: PoolInput[], balancerQueriesAddr
 
     const tokenPairOutput: PoolTokenPairsOutput = {};
 
-    const multicaller = new Multicaller3(BalancerQueries, batchSize);
+    const multicaller = new Multicaller3Viem(pools[0].chain, BalancerQueries, batchSize);
 
     // only inlcude pools with TVL >=$1000
     // for each pool, get pairs
@@ -87,8 +88,12 @@ export async function fetchTokenPairData(pools: PoolInput[], balancerQueriesAddr
             // tokenA->tokenB with 1% of tokenA balance
             tokenPair.aToBAmountIn = parseUnits(tokenPair.tokenA.balance, tokenPair.tokenA.decimals) / 100n;
             // tokenA->tokenB with 100USD worth of tokenA
-            const oneHundred = ((parseFloat(tokenPair.tokenA.balance) / tokenPair.tokenA.balanceUsd) * 100).toFixed(20);
-            tokenPair.effectivePriceAmountIn = parseUnits(`${oneHundred}`, tokenPair.tokenA.decimals);
+            const oneHundred = (parseFloat(tokenPair.tokenA.balance) / tokenPair.tokenA.balanceUsd) * 100;
+            let oneHundredStr = oneHundred.toFixed(20);
+            if (oneHundredStr.includes('e+')) {
+                oneHundredStr = oneHundred.toLocaleString('fullwide', { useGrouping: false });
+            }
+            tokenPair.effectivePriceAmountIn = parseUnits(`${oneHundredStr}`, tokenPair.tokenA.decimals);
 
             addEffectivePriceCallsToMulticaller(tokenPair, balancerQueriesAddress, multicaller);
             addAToBPriceCallsToMulticaller(tokenPair, balancerQueriesAddress, multicaller);
@@ -217,7 +222,7 @@ function generateTokenPairs(filteredPools: PoolInput[]): TokenPair[] {
 function addEffectivePriceCallsToMulticaller(
     tokenPair: TokenPair,
     balancerQueriesAddress: string,
-    multicaller: Multicaller3,
+    multicaller: IMulticaller,
 ) {
     multicaller.call(
         `${tokenPair.poolId}-${tokenPair.tokenA.address}-${tokenPair.tokenB.address}.effectivePriceAmountOut`,
@@ -241,7 +246,7 @@ function addEffectivePriceCallsToMulticaller(
 function addAToBPriceCallsToMulticaller(
     tokenPair: TokenPair,
     balancerQueriesAddress: string,
-    multicaller: Multicaller3,
+    multicaller: IMulticaller,
 ) {
     multicaller.call(
         `${tokenPair.poolId}-${tokenPair.tokenA.address}-${tokenPair.tokenB.address}.aToBAmountOut`,
@@ -265,7 +270,7 @@ function addAToBPriceCallsToMulticaller(
 function addBToAPriceCallsToMulticaller(
     tokenPair: TokenPair,
     balancerQueriesAddress: string,
-    multicaller: Multicaller3,
+    multicaller: IMulticaller,
 ) {
     multicaller.call(
         `${tokenPair.poolId}-${tokenPair.tokenA.address}-${tokenPair.tokenB.address}.bToAAmountOut`,
@@ -288,7 +293,7 @@ function addBToAPriceCallsToMulticaller(
 function getAmountOutAndEffectivePriceFromResult(tokenPair: TokenPair, onchainResults: { [id: string]: OnchainData }) {
     const result = onchainResults[`${tokenPair.poolId}-${tokenPair.tokenA.address}-${tokenPair.tokenB.address}`];
 
-    if (result?.effectivePriceAmountOut && result.effectivePriceAmountOut.gt(0) && result.aToBAmountOut) {
+    if (result?.effectivePriceAmountOut && result.effectivePriceAmountOut > 0n && result.aToBAmountOut) {
         tokenPair.aToBAmountOut = BigInt(result.aToBAmountOut.toString());
         // MathSol expects all values with 18 decimals, need to scale them
         tokenPair.effectivePrice = MathSol.divDownFixed(

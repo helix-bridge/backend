@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { DeploymentEnv, NetworkConfig } from './network-config-types';
 import { tokenService } from '../token/token.service';
 import { BoostedPoolAprService } from '../pool/lib/apr-data-sources/nested-pool-apr.service';
-import { SwapFeeAprService } from '../pool/lib/apr-data-sources/swap-fee-apr.service';
+import { SwapFeeFromEventsAprService } from '../pool/lib/apr-data-sources/';
 import { GaugeAprService } from '../pool/lib/apr-data-sources/ve-bal-gauge-apr.service';
 import { UserSyncGaugeBalanceService } from '../user/lib/user-sync-gauge-balance.service';
 import { every } from '../../apps/scheduler/intervals';
@@ -21,14 +21,14 @@ export const sepoliaNetworkConfig: NetworkConfig = {
     poolAprServices: [
         new YbTokensAprService(sepoliaNetworkData.ybAprConfig, sepoliaNetworkData.chain.prismaId),
         new BoostedPoolAprService(),
-        new SwapFeeAprService(),
+        new SwapFeeFromEventsAprService(),
         new GaugeAprService(tokenService, [sepoliaNetworkData.bal!.address]),
     ],
     userStakedBalanceServices: [new UserSyncGaugeBalanceService()],
     services: {
         balancerSubgraphService: new BalancerSubgraphService(
             sepoliaNetworkData.subgraphs.balancer,
-            sepoliaNetworkData.chain.id,
+            sepoliaNetworkData.chain.prismaId,
         ),
     },
     /*
@@ -39,14 +39,98 @@ export const sepoliaNetworkConfig: NetworkConfig = {
     This is needed because the maximum alarm evaluation period is 1 day (period * evaluationPeriod).
     */
     workerJobs: [
-        // V3 jobs
         {
-            name: 'add-pools-v3',
+            name: 'update-liquidity-for-inactive-pools',
+            interval: every(1, 'days'),
+            alarmEvaluationPeriod: 1,
+            alarmDatapointsToAlarm: 1,
+        },
+        {
+            name: 'update-liquidity-for-active-pools',
+            interval: every(2, 'minutes'),
+        },
+        {
+            name: 'update-pool-apr',
+            interval: every(2, 'minutes'),
+        },
+        {
+            name: 'load-on-chain-data-for-pools-with-active-updates',
+            interval: every(1, 'minutes'),
+        },
+        {
+            name: 'sync-new-pools-from-subgraph',
+            interval: every(2, 'minutes'),
+        },
+        {
+            name: 'sync-tokens-from-pool-tokens',
             interval: every(5, 'minutes'),
         },
         {
-            name: 'sync-pools-v3',
+            name: 'update-liquidity-24h-ago-v2',
+            interval: every(5, 'minutes'),
+        },
+        {
+            name: 'cache-average-block-time',
+            interval: every(1, 'hours'),
+        },
+        {
+            name: 'sync-staking-for-pools',
+            interval: every(5, 'minutes'),
+        },
+        {
+            name: 'sync-snapshots-v2',
+            interval: every(90, 'minutes'),
+        },
+        {
+            name: 'update-lifetime-values-for-all-pools',
+            interval: every(50, 'minutes'),
+        },
+        {
+            name: 'sync-changed-pools',
+            interval: every(30, 'seconds'),
+            alarmEvaluationPeriod: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
+            alarmDatapointsToAlarm: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
+        },
+        {
+            name: 'user-sync-wallet-balances-for-all-pools',
+            interval: every(20, 'seconds'),
+            alarmEvaluationPeriod: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
+            alarmDatapointsToAlarm: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
+        },
+        {
+            name: 'user-sync-staked-balances',
+            interval: every(20, 'seconds'),
+            alarmEvaluationPeriod: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
+            alarmDatapointsToAlarm: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
+        },
+        {
+            name: 'update-fee-volume-yield-all-pools',
+            interval: every(1, 'hours'),
+        },
+        // {
+        //     name: 'sync-vebal-balances',
+        //     interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(9, 'minutes') : every(3, 'minutes'),
+        // },
+        // {
+        //     name: 'sync-vebal-totalSupply',
+        //     interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(5, 'minutes'),
+        // },
+        {
+            name: 'sync-join-exits-v2',
             interval: every(1, 'minutes'),
+        },
+        {
+            name: 'sync-swaps-v2',
+            interval: every(1, 'minutes'),
+        },
+        // V3 jobs
+        {
+            name: 'add-pools-v3',
+            interval: every(2, 'minutes'),
+        },
+        {
+            name: 'sync-pools-v3',
+            interval: every(30, 'seconds'),
         },
         {
             name: 'sync-join-exits-v3',
@@ -57,41 +141,33 @@ export const sepoliaNetworkConfig: NetworkConfig = {
             interval: every(1, 'minutes'),
         },
         {
-            name: 'update-swaps-volume-and-fees-v3',
-            interval: every(20, 'minutes'),
-        },
-        {
             name: 'sync-snapshots-v3',
-            interval: every(12, 'hours'),
+            interval: every(90, 'minutes'),
         },
         {
             name: 'sync-hook-data',
             interval: every(1, 'hours'),
         },
-        {
-            name: 'sync-tokens-from-pool-tokens',
-            interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(5, 'minutes'),
-        },
         // COW AMM
         { name: 'add-new-cow-amm-pools', interval: every(5, 'minutes') },
         {
             name: 'sync-cow-amm-pools',
-            interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(2, 'minutes') : every(30, 'seconds'),
+            interval: every(30, 'seconds'),
             alarmEvaluationPeriod: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
             alarmDatapointsToAlarm: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? 3 : 1,
         },
         {
             name: 'sync-cow-amm-swaps',
-            interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(1, 'minutes'),
+            interval: every(1, 'minutes'),
         },
         {
             name: 'sync-cow-amm-join-exits',
-            interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(1, 'minutes'),
+            interval: every(1, 'minutes'),
         },
         { name: 'sync-cow-amm-snapshots', interval: every(90, 'minutes') },
         {
             name: 'update-cow-amm-volume-and-fees',
-            interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(60, 'minutes') : every(20, 'minutes'),
+            interval: every(20, 'minutes'),
         },
     ],
 };

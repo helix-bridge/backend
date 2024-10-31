@@ -10,6 +10,7 @@ import { UserService } from '../../user/user.service';
 import { prismaBulkExecuteOperations } from '../../../prisma/prisma-util';
 import { networkContext } from '../../network/network-context.service';
 import { subgraphToPrismaCreate, subgraphToPrismaUpdate } from '../subgraph-mapper';
+import { CowAmmController } from '../../controllers';
 
 export class PoolCreatorService {
     constructor(private readonly userService: UserService) {}
@@ -52,28 +53,14 @@ export class PoolCreatorService {
             }
         }
 
-        return poolIds;
-    }
-
-    public async syncNewPoolsFromSubgraph(blockNumber: number): Promise<string[]> {
-        const existing = (await prisma.prismaPool.findMany({ where: { chain: this.chain }, select: { id: true } })).map(
-            (pool) => pool.id,
-        );
-
-        const subgraphPools = await this.balancerSubgraphService
-            .getAllPools({}, false)
-            .then((pools) => _.orderBy(pools, ['createTime'], 'asc'));
-
-        const missing = subgraphPools.filter((pool) => !existing.includes(pool.id));
-
-        // any pool can be nested
-        const allNestedTypePools = [...subgraphPools.map((pool) => ({ id: pool.id, address: pool.address }))];
-
-        for (const subgraphPool of missing) {
-            await this.createPoolRecord(subgraphPool, blockNumber, allNestedTypePools);
+        if (poolIds.length > 0) {
+            // Attach CowAMM syncing
+            console.log('initBalancesForPools: syncing CowAMM balances...');
+            await CowAmmController().syncBalances(this.chain);
+            console.log('initBalancesForPools: finished syncing CowAMM balances');
         }
 
-        return Array.from(missing.map((pool) => pool.id));
+        return poolIds;
     }
 
     public async reloadAllTokenNestedPoolIds(): Promise<void> {

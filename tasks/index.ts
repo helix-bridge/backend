@@ -1,22 +1,23 @@
 import moment from 'moment';
-import { daysAgo } from '../modules/common/time';
 import {
-    JobsController,
+    SftmxController,
     SnapshotsController,
     UserBalancesController,
     CowAmmController,
     AprsController,
     ContentController,
-    PoolMutationController,
+    FXPoolsController,
     PoolController,
     EventController,
+    PoolMutationController,
+    StakingController,
 } from '../modules/controllers';
 import { chainIdToChain } from '../modules/network/chain-id-to-chain';
 
 import { backsyncSwaps } from './subgraph-syncing/backsync-swaps';
 
 // TODO needed?
-const jobsController = JobsController();
+const sftmxController = SftmxController();
 const snapshotsController = SnapshotsController();
 
 /**
@@ -27,21 +28,31 @@ const snapshotsController = SnapshotsController();
  * @param chain
  * @returns
  */
-async function run(job: string = process.argv[2], chain: string = process.argv[3]) {
-    console.log('Running job', job, chain);
+async function run(job: string = process.argv[2], chainId: string = process.argv[3]) {
+    console.log('Running job', job, chainId);
 
-    if (job === 'add-pools-v3') {
+    const chain = chainIdToChain[chainId];
+
+    if (job === 'add-pools-v2') {
+        return PoolController().addPoolsV2(chain);
+    } else if (job === 'sync-all-pools-v2') {
+        return PoolController().syncOnchainDataForAllPoolsV2(chain);
+    } else if (job === 'sync-changed-pools-v2') {
+        return PoolController().syncChangedPoolsV2(chain);
+    } else if (job === 'add-pools-v3') {
         return PoolController().addPoolsV3(chain);
     } else if (job === 'reload-pools-v3') {
-        return PoolController().reloadPoolsV3(chainIdToChain[chain]);
+        return PoolController().reloadPoolsV3(chain);
     } else if (job === 'sync-pools-v3') {
-        return PoolController().syncPoolsV3(chain);
+        return PoolController().syncChangedPoolsV3(chain);
+    } else if (job === 'sync-staking') {
+        return StakingController().syncStaking(chain);
     } else if (job === 'sync-join-exits-v3') {
         return EventController().syncJoinExitsV3(chain);
     } else if (job === 'sync-join-exits-v2') {
         return EventController().syncJoinExitsV2(chain);
     } else if (job === 'sync-swaps-v2') {
-        return EventController().syncSwapsV2(chain);
+        return EventController().syncSwapsUpdateVolumeAndFeesV2(chain);
     } else if (job === 'sync-snapshots-v2') {
         return snapshotsController.syncSnapshotsV2(chain);
     } else if (job === 'fill-missing-snapshots-v2') {
@@ -52,24 +63,26 @@ async function run(job: string = process.argv[2], chain: string = process.argv[3
         return snapshotsController.fillMissingSnapshotsV3(chain);
     } else if (job === 'sync-swaps-v3') {
         return EventController().syncSwapsV3(chain);
-    } else if (job === 'update-liquidity-24h-ago') {
-        return PoolController().updateLiquidity24hAgo(chain);
+    } else if (job === 'update-liquidity-24h-ago-v3') {
+        return PoolController().updateLiquidity24hAgoV3(chain);
     } else if (job === 'sync-sftmx-staking') {
-        return jobsController.syncSftmxStakingData(chain);
+        return sftmxController.syncSftmxStakingData(chain);
     } else if (job === 'sync-sftmx-withdrawal') {
-        return jobsController.syncSftmxWithdrawalrequests(chain);
+        return sftmxController.syncSftmxWithdrawalrequests(chain);
     } else if (job === 'sync-sftmx-staking-snapshots') {
-        return jobsController.syncSftmxStakingSnapshots(chain);
+        return sftmxController.syncSftmxStakingSnapshots(chain);
+    } else if (job === 'sync-user-balances-v2') {
+        return UserBalancesController().syncUserBalancesFromV2Subgraph(chain);
     } else if (job === 'sync-user-balances-v3') {
         return UserBalancesController().syncUserBalancesFromV3Subgraph(chain);
     } else if (job === 'load-onchain-data-v3') {
-        return PoolMutationController().loadOnchainDataForAllPools(chain);
+        return PoolMutationController().loadOnchainDataForAllPoolsV3(chain);
     } else if (job === 'add-new-cow-amm-pools') {
         return CowAmmController().addPools(chain);
     } else if (job === 'sync-cow-amm-pools') {
         return CowAmmController().syncPools(chain);
     } else if (job === 'reload-cow-amm-pools') {
-        return CowAmmController().reloadPools(chainIdToChain[chain]);
+        return CowAmmController().reloadPools(chain);
     } else if (job === 'sync-cow-amm-snapshots') {
         return CowAmmController().syncSnapshots(chain);
     } else if (job === 'sync-all-cow-amm-snapshots') {
@@ -94,6 +107,8 @@ async function run(job: string = process.argv[2], chain: string = process.argv[3
         return CowAmmController().syncBalances(chain);
     } else if (job === 'sync-categories') {
         return ContentController().syncCategories();
+    } else if (job === 'sync-latest-fx-prices') {
+        return FXPoolsController().syncLatestPrices(chain);
     } else if (job === 'backsync-swaps') {
         // Run in loop until no new swaps are found
         let status: string | undefined = 'true';

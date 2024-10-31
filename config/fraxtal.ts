@@ -1,3 +1,4 @@
+import { env } from '../apps/env';
 import { NetworkData } from '../modules/network/network-config-types';
 
 export default <NetworkData>{
@@ -17,6 +18,7 @@ export default <NetworkData>{
         beetsBar: '',
         blocks: 'https://api.goldsky.com/api/public/project_clwhu1vopoigi01wmbn514m1z/subgraphs/fraxtal-blocks/1.0.0/gn',
         gauge: 'https://api.goldsky.com/api/public/project_clwhu1vopoigi01wmbn514m1z/subgraphs/balancer-gauges-fraxtal/latest/gn',
+        aura: 'https://data.aura.finance/graphql',
     },
     eth: {
         address: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
@@ -33,7 +35,9 @@ export default <NetworkData>{
         platformId: 'fraxtal',
         excludedTokenAddresses: [],
     },
-    rpcUrl: 'https://rpc.frax.com/',
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=fraxtal&dkey=${env.DRPC_API_KEY}`
+        : 'https://rpc.frax.com/',
     rpcMaxBlockRange: 5000,
     protocolToken: 'bal',
     bal: {

@@ -150,6 +150,11 @@ export const schema = gql`
         id: ID!
 
         """
+        Liquidity management settings for v3 pools.
+        """
+        liquidityManagement: LiquidityManagement
+
+        """
         Name of the pool.
         """
         name: String!
@@ -347,6 +352,11 @@ export const schema = gql`
         factory: Bytes
 
         """
+        Hook assigned to a pool
+        """
+        hook: Hook
+
+        """
         The pool id. This is equal to the address for protocolVersion 3 pools
         """
         id: ID!
@@ -355,6 +365,11 @@ export const schema = gql`
         Data specific to gyro/fx pools
         """
         lambda: String
+
+        """
+        Liquidity management settings for v3 pools.
+        """
+        liquidityManagement: LiquidityManagement
 
         """
         The name of the pool as per contract
@@ -543,12 +558,42 @@ export const schema = gql`
         """
         Cow AMM specific APR
         """
-        SURPLUS
+        SURPLUS @deprecated(reason: "Use SURPLUS_24H instead")
+
+        """
+        Surplus APR based on data from the last 7d
+        """
+        SURPLUS_7D
+
+        """
+        Surplus APR based on data from the last 24h
+        """
+        SURPLUS_24H
+
+        """
+        Surplus APR based on data from the last 30d
+        """
+        SURPLUS_30D
 
         """
         Represents the swap fee APR in a pool.
         """
-        SWAP_FEE
+        SWAP_FEE @deprecated(reason: "Use SWAP_FEE_24H instead")
+
+        """
+        Swap fee APR based on data from the last 7d
+        """
+        SWAP_FEE_7D
+
+        """
+        Swap fee APR based on data from the last 24h
+        """
+        SWAP_FEE_24H
+
+        """
+        Swap fee APR based on data from the last 30d
+        """
+        SWAP_FEE_30D
 
         """
         Reward APR in a pool from veBAL emissions allocated by gauge votes. Emitted in BAL.
@@ -622,6 +667,21 @@ export const schema = gql`
         factory: Bytes
 
         """
+        Whether at least one token in this pool is considered an ERC4626 token.
+        """
+        hasErc4626: Boolean!
+
+        """
+        Whether at least one token in a nested pool is considered an ERC4626 token.
+        """
+        hasNestedErc4626: Boolean!
+
+        """
+        Hook assigned to a pool
+        """
+        hook: Hook
+
+        """
         The pool id. This is equal to the address for protocolVersion 3 pools
         """
         id: ID!
@@ -630,6 +690,11 @@ export const schema = gql`
         Deprecated
         """
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+
+        """
+        Liquidity management settings for v3 pools.
+        """
+        liquidityManagement: LiquidityManagement
 
         """
         The name of the pool as per contract
@@ -715,7 +780,7 @@ export const schema = gql`
 
     type GqlPoolBatchSwapSwap {
         id: ID!
-        pool: GqlPoolMinimal!
+        pool: PoolForBatchSwap!
         timestamp: Int!
         tokenAmountIn: String!
         tokenAmountOut: String!
@@ -738,10 +803,14 @@ export const schema = gql`
         displayTokens: [GqlPoolTokenDisplay!]!
         dynamicData: GqlPoolDynamicData!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+        liquidityManagement: LiquidityManagement
         name: String!
-        nestingType: GqlPoolNestingType!
+        nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
         owner: Bytes!
         poolTokens: [GqlPoolTokenDetail!]!
         protocolVersion: Int!
@@ -769,7 +838,7 @@ export const schema = gql`
         factory: Bytes
         id: ID!
         name: String!
-        nestingType: GqlPoolNestingType!
+        nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
         owner: Bytes!
         swapFee: BigDecimal!
         symbol: String!
@@ -838,6 +907,7 @@ export const schema = gql`
         totalLiquidityAtlTimestamp: Int!
         totalShares: BigDecimal!
         totalShares24hAgo: BigDecimal!
+        totalSupply: BigDecimal!
         volume24h: BigDecimal!
         volume24hAth: BigDecimal!
         volume24hAthTimestamp: Int!
@@ -859,8 +929,12 @@ export const schema = gql`
         displayTokens: [GqlPoolTokenDisplay!]!
         dynamicData: GqlPoolDynamicData!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+        liquidityManagement: LiquidityManagement
         name: String!
         owner: Bytes!
         poolTokens: [GqlPoolTokenDetail!]!
@@ -1003,6 +1077,7 @@ export const schema = gql`
         createTime: GqlPoolTimePeriod
         filterIn: [String!]
         filterNotIn: [String!]
+        hasHook: Boolean
         idIn: [String!]
         idNotIn: [String!]
         minTvl: Float
@@ -1053,9 +1128,13 @@ export const schema = gql`
         dynamicData: GqlPoolDynamicData!
         epsilon: String!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
         lambda: String!
+        liquidityManagement: LiquidityManagement
         name: String!
         owner: Bytes
         poolTokens: [GqlPoolTokenDetail!]!
@@ -1089,11 +1168,15 @@ export const schema = gql`
         displayTokens: [GqlPoolTokenDisplay!]!
         dynamicData: GqlPoolDynamicData!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
         lambda: String!
+        liquidityManagement: LiquidityManagement
         name: String!
-        nestingType: GqlPoolNestingType!
+        nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
         owner: Bytes!
         poolTokens: [GqlPoolTokenDetail!]!
         protocolVersion: Int!
@@ -1173,10 +1256,14 @@ export const schema = gql`
         displayTokens: [GqlPoolTokenDisplay!]!
         dynamicData: GqlPoolDynamicData!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+        liquidityManagement: LiquidityManagement
         name: String!
-        nestingType: GqlPoolNestingType!
+        nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
         owner: Bytes!
         poolTokens: [GqlPoolTokenDetail!]!
         protocolVersion: Int!
@@ -1206,8 +1293,12 @@ export const schema = gql`
         displayTokens: [GqlPoolTokenDisplay!]!
         dynamicData: GqlPoolDynamicData!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+        liquidityManagement: LiquidityManagement
         name: String!
         owner: Bytes!
         poolTokens: [GqlPoolTokenDetail!]!
@@ -1278,6 +1369,11 @@ export const schema = gql`
         hasErc4626: Boolean!
 
         """
+        Whether at least one token in a nested pool is considered an ERC4626 token.
+        """
+        hasNestedErc4626: Boolean!
+
+        """
         Hook assigned to a pool
         """
         hook: Hook
@@ -1291,6 +1387,11 @@ export const schema = gql`
         Pool is receiving rewards when liquidity tokens are staked
         """
         incentivized: Boolean!
+
+        """
+        Liquidity management settings for v3 pools.
+        """
+        liquidityManagement: LiquidityManagement
 
         """
         The name of the pool as per contract
@@ -1428,8 +1529,12 @@ export const schema = gql`
         displayTokens: [GqlPoolTokenDisplay!]!
         dynamicData: GqlPoolDynamicData!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+        liquidityManagement: LiquidityManagement
         name: String!
         owner: Bytes!
         poolTokens: [GqlPoolTokenDetail!]!
@@ -1443,15 +1548,6 @@ export const schema = gql`
         vaultVersion: Int! @deprecated(reason: "use protocolVersion instead")
         version: Int!
         withdrawConfig: GqlPoolWithdrawConfig! @deprecated(reason: "Removed without replacement")
-    }
-
-    type GqlPoolStableComposablePoolData {
-        address: String!
-        balance: String!
-        id: ID!
-        symbol: String!
-        tokens: [GqlPoolToken!]!
-        totalSupply: String!
     }
 
     type GqlPoolStaking {
@@ -1860,6 +1956,11 @@ export const schema = gql`
         priceRateProviderData: GqlPriceRateProviderData
 
         """
+        Conversion factor used to adjust for token decimals for uniform precision in calculations. V3 only.
+        """
+        scalingFactor: BigDecimal
+
+        """
         Symbol of the pool token.
         """
         symbol: String!
@@ -1974,10 +2075,14 @@ export const schema = gql`
         displayTokens: [GqlPoolTokenDisplay!]!
         dynamicData: GqlPoolDynamicData!
         factory: Bytes
+        hasErc4626: Boolean!
+        hasNestedErc4626: Boolean!
+        hook: Hook
         id: ID!
         investConfig: GqlPoolInvestConfig! @deprecated(reason: "Removed without replacement")
+        liquidityManagement: LiquidityManagement
         name: String!
-        nestingType: GqlPoolNestingType!
+        nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
         owner: Bytes!
         poolTokens: [GqlPoolTokenDetail!]!
         protocolVersion: Int!
@@ -2638,7 +2743,7 @@ export const schema = gql`
     }
 
     """
-    Represents a token
+    Represents a token in the system
     """
     type GqlToken {
         """
@@ -2704,7 +2809,7 @@ export const schema = gql`
         """
         The rate provider data for the token
         """
-        rateProviderData: GqlPriceRateProviderData
+        rateProviderData: GqlPriceRateProviderData @deprecated(reason: "Use priceRateProviderData instead")
 
         """
         The symbol of the token
@@ -2936,8 +3041,26 @@ export const schema = gql`
         lockedUsd: AmountHumanReadable!
     }
 
+    """
+    Represents a snapshot of a VeBal lock at a specific point in time.
+    """
+    type GqlVeBalLockSnapshot {
+        """
+        The locked balance at that time.
+        """
+        balance: AmountHumanReadable!
+        bias: String!
+        slope: String!
+
+        """
+        The timestamp of the snapshot, snapshots are taking at lock events.
+        """
+        timestamp: Int!
+    }
+
     type GqlVeBalUserData {
         balance: AmountHumanReadable!
+        lockSnapshots: [GqlVeBalLockSnapshot!]!
         locked: AmountHumanReadable!
         lockedUsd: AmountHumanReadable!
         rank: Int
@@ -3086,38 +3209,44 @@ export const schema = gql`
 
     scalar JSON
 
+    """
+    Liquidity management settings for v3 pools.
+    """
+    type LiquidityManagement {
+        """
+        Indicates whether this pool has disabled add and removes of unbalanced/non-proportional liquidity. Meaning it will only support proportional add and remove liquidity.
+        """
+        disableUnbalancedLiquidity: Boolean
+
+        """
+        Whether this pool support additional, custom add liquditiy operations apart from proportional, unbalanced and single asset.
+        """
+        enableAddLiquidityCustom: Boolean
+
+        """
+        Indicates whether donation is enabled. Meaning you can send funds to the pool without receiving a BPT.
+        """
+        enableDonation: Boolean
+
+        """
+        Whether this pool support additional, custom remove liquditiy operations apart from proportional, unbalanced and single asset.
+        """
+        enableRemoveLiquidityCustom: Boolean
+    }
+
     type Mutation {
         beetsPoolLoadReliquarySnapshotsForAllFarms: String!
         beetsSyncFbeetsRatio: String!
         cacheAverageBlockTime: String!
-        poolBlackListAddPool(poolId: String!): String!
-        poolBlackListRemovePool(poolId: String!): String!
-        poolDeletePool(poolId: String!): String!
-        poolInitOnChainDataForAllPools: String!
-        poolInitializeSnapshotsForPool(poolId: String!): String!
-        poolLoadOnChainDataForAllPools: String!
-        poolLoadOnChainDataForPoolsWithActiveUpdates: String!
-        poolLoadSnapshotsForAllPools: String!
+        poolLoadOnChainDataForAllPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
         poolLoadSnapshotsForPools(poolIds: [String!]!, reload: Boolean): String!
         poolReloadAllPoolAprs(chain: GqlChain!): String!
-        poolReloadAllTokenNestedPoolIds: String!
         poolReloadPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
         poolReloadStakingForAllPools(stakingTypes: [GqlPoolStakingType!]!): String!
         poolSyncAllCowSnapshots(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
         poolSyncAllPoolsFromSubgraph: [String!]!
-        poolSyncLatestSnapshotsForAllPools(chain: GqlChain!): String!
-        poolSyncNewPoolsFromSubgraph: [String!]!
-        poolSyncPool(poolId: String!): String!
-        poolSyncPoolAllTokensRelationship: String!
-        poolSyncSanityPoolData: String!
-        poolSyncStakingForPools: String!
-        poolSyncSwapsForLast48Hours: String!
-        poolSyncTotalShares: String!
-        poolUpdateAprs(chain: GqlChain!): String!
         poolUpdateLifetimeValuesForAllPools: String!
-        poolUpdateLiquidity24hAgoForAllPools: String!
         poolUpdateLiquidityValuesForAllPools: String!
-        poolUpdateVolumeAndFeeValuesForAllPools: String!
         protocolCacheMetrics: String!
         sftmxSyncStakingData: String!
         sftmxSyncWithdrawalRequests: String!
@@ -3136,6 +3265,14 @@ export const schema = gql`
         userSyncChangedWalletBalancesForAllPools: String!
         veBalSyncAllUserBalances: String!
         veBalSyncTotalSupply: String!
+    }
+
+    type PoolForBatchSwap {
+        allTokens: [TokenForBatchSwapPool!]
+        id: String!
+        name: String!
+        symbol: String!
+        type: GqlPoolType!
     }
 
     type Query {
@@ -3446,5 +3583,12 @@ export const schema = gql`
     type Token {
         address: String!
         decimals: Int!
+    }
+
+    type TokenForBatchSwapPool {
+        address: String!
+        isNested: Boolean!
+        isPhantomBpt: Boolean!
+        weight: BigDecimal
     }
 `;

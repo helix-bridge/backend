@@ -70,10 +70,7 @@ export class ProtocolService {
     public async cacheProtocolMetrics(chain: Chain): Promise<GqlProtocolMetricsChain> {
         const oneDayAgo = moment().subtract(24, 'hours').unix();
 
-        const client = getV2SubgraphClient(
-            AllNetworkConfigsKeyedOnChain[chain].data.subgraphs.balancer,
-            Number(chainToIdMap[chain]),
-        );
+        const client = getV2SubgraphClient(AllNetworkConfigsKeyedOnChain[chain].data.subgraphs.balancer, chain);
 
         const { balancers } = await client.BalancerProtocolData({});
         const { totalSwapFee, totalSwapVolume, poolCount } = balancers[0];
@@ -91,9 +88,9 @@ export class ProtocolService {
             include: { dynamicData: true },
         });
 
-        const swaps = await prisma.prismaPoolSwap.findMany({
-            select: { poolId: true, valueUSD: true, timestamp: true },
-            where: { timestamp: { gte: oneDayAgo }, chain },
+        const swaps = await prisma.prismaPoolEvent.findMany({
+            select: { poolId: true, valueUSD: true, blockTimestamp: true },
+            where: { blockTimestamp: { gte: oneDayAgo }, chain, type: 'SWAP' },
         });
         const filteredSwaps = swaps.filter((swap) => pools.find((pool) => pool.id === swap.poolId));
 

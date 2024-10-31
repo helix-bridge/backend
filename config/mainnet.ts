@@ -1,6 +1,5 @@
 import { BigNumber } from 'ethers';
 import { env } from '../apps/env';
-import { syncReliquaryStakingForPools } from '../modules/actions/pool/staking';
 import { DeploymentEnv, NetworkData } from '../modules/network/network-config-types';
 
 const underlyingTokens = {
@@ -8,6 +7,8 @@ const underlyingTokens = {
     USDT: '0xdac17f958d2ee523a2206206994597c13d831ec7',
     DAI: '0x6b175474e89094c44da98b954eedeac495271d0f',
     wETH: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    crvUSD: '0xf939e0a03fb07f59a73314e73794be0e57ac1b4e',
+    LUSD: '0x5f98805a4e8be255a32880fdec7f6728c6568ba0',
 };
 
 export default <NetworkData>{
@@ -21,7 +22,7 @@ export default <NetworkData>{
     },
     subgraphs: {
         startDate: '2019-04-20',
-        cowAmm: `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmUvfS6hqU3nGQxFFzxoMBkufYJ7Jh3cYdTUM64hucgqe7`,
+        cowAmm: `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmQ3c9CTJBZdgy3uTLB929ARZucMUCf6piZBDxSgBKnf6m`,
         balancer: [
             `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmQ5TT2yYBZgoUxsat3bKmNe5Fr9LW9YAtDs8aeuc1BRhj`,
         ],
@@ -48,8 +49,8 @@ export default <NetworkData>{
             '0xb45ad160634c528cc3d2926d9807104fa3157305', // sDOLA, has Coingecko entry but no price
         ],
     },
-    rpcUrl: env.ALCHEMY_API_KEY
-        ? `https://eth-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=ethereum&dkey=${env.DRPC_API_KEY}`
         : 'https://rpc.ankr.com/eth',
     rpcMaxBlockRange: 700,
     protocolToken: 'bal',
@@ -173,6 +174,20 @@ export default <NetworkData>{
                             stataEthWETH: '0x03928473f25bb2da6bc880b07ecbadc636822264',
                         },
                     },
+                    crvUSD: {
+                        underlyingAssetAddress: underlyingTokens.crvUSD,
+                        aTokenAddress: '0xb82fa9f31612989525992fcfbb09ab22eff5c85a',
+                        wrappedTokens: {
+                            stataEthcrvUSD: '0x848107491e029afde0ac543779c7790382f15929',
+                        },
+                    },
+                    LUSD: {
+                        underlyingAssetAddress: underlyingTokens.LUSD,
+                        aTokenAddress: '0x3fe6a295459fae07df8a0cecc36f37160fe86aa9',
+                        wrappedTokens: {
+                            stataEthLUSD: '0xdbf5e36569798d1e39ee9d7b1c61a7409a74f23a',
+                        },
+                    },
                 },
             },
         },
@@ -184,6 +199,16 @@ export default <NetworkData>{
                 },
             },
         },
+        defillama: [
+            {
+                defillamaPoolId: '5a9c2073-2190-4002-9654-8c245d1e8534',
+                tokenAddress: '0x6dc3ce9c57b20131347fdc9089d740daf6eb34c5',
+            },
+            {
+                defillamaPoolId: '46f3828a-cbf6-419e-8399-a83b905bf556',
+                tokenAddress: '0xf073bac22dab7faf4a3dd6c6189a70d54110525c',
+            },
+        ],
         euler: {
             subgraphUrl: 'https://api.thegraph.com/subgraphs/name/euler-xyz/euler-mainnet',
             tokens: {
@@ -253,6 +278,7 @@ export default <NetworkData>{
             token: '0x09db87a538bd693e9d08544577d5ccfaa6373a48',
         },
         sveth: true,
+        teth: true,
         defaultHandlers: {
             uniETH: {
                 tokenAddress: '0xf1376bcef0f78459c0ed0ba5ddce976f1ddf51f4',
@@ -304,8 +330,8 @@ export default <NetworkData>{
             },
             rETH: {
                 tokenAddress: '0xae78736cd615f374d3085123a210448e74fc6393',
-                sourceUrl: 'https://rocketpool.net/api/mainnet/payload',
-                path: 'rethAPR',
+                sourceUrl: 'https://api.rocketpool.net/mainnet/reth/apr',
+                path: 'yearlyAPR',
                 isIbYield: true,
             },
             USDR: {
@@ -398,6 +424,12 @@ export default <NetworkData>{
                 tokenAddress: '0xe1b4d34e8754600962cd944b535180bd758e6c2e',
                 sourceUrl: 'https://universe.kelpdao.xyz/rseth/apy',
                 path: 'value',
+                isIbYield: true,
+            },
+            dvstETH: {
+                tokenAddress: '0x5e362eb2c0706bd1d134689ec75176018385430b',
+                sourceUrl: 'https://eth-api.lido.fi/v1/protocol/steth/apr/sma',
+                path: 'data.smaApr',
                 isIbYield: true,
             },
         },

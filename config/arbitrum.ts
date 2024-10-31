@@ -14,9 +14,8 @@ export default <NetworkData>{
         startDate: '2021-08-23',
         balancer: [
             `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmPbjY6L1NhPjpBv7wDTfG9EPx5FpCuBqeg1XxByzBTLcs`,
-            `https://subgraph.satsuma-prod.com/${env.SATSUMA_API_KEY}/balancer/balancer-v2-arbitrum/api`,
         ],
-        cowAmm: `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmTSU862YAXb5XMhGsE7JCajuvf5FPiZjrdvC9nnbzd86x`,
+        cowAmm: `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmUDGSJXdMzG4ezDzf1LvXVb2igwY6rnaNFLC62ZJZ3Pbv`,
         beetsBar: 'https://',
         blocks: 'https://api.studio.thegraph.com/query/48427/arbitrum-blocks/version/latest',
         gauge: `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmT3h6pogdPkxfWsBxKNtpq7kR9fqKaQ9jGxe7fZx7MUVE`,
@@ -37,7 +36,9 @@ export default <NetworkData>{
         platformId: 'arbitrum-one',
         excludedTokenAddresses: ['0x6dbf2155b0636cb3fd5359fccefb8a2c02b6cb51'], // plsRDNT, has coingecko entry but no price
     },
-    rpcUrl: env.ALCHEMY_API_KEY ? `https://arb-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}` : 'https://1rpc.io/arb',
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=arbitrum&dkey=${env.DRPC_API_KEY}`
+        : 'https://1rpc.io/arb',
     rpcMaxBlockRange: 2000,
     protocolToken: 'bal',
     bal: {
@@ -128,6 +129,12 @@ export default <NetworkData>{
                 },
             },
         },
+        defillama: [
+            {
+                defillamaPoolId: '46f3828a-cbf6-419e-8399-a83b905bf556',
+                tokenAddress: '0x5a7a183b6b44dc4ec2e3d2ef43f98c5152b1d76d',
+            },
+        ],
         reaper: {
             onchainSource: {
                 averageAPRAcrossLastNHarvests: 5,
@@ -168,8 +175,8 @@ export default <NetworkData>{
             },
             rETH: {
                 tokenAddress: '0xec70dcb4a1efa46b8f2d97c310c9c4790ba5ffa8',
-                sourceUrl: 'https://rocketpool.net/api/mainnet/payload',
-                path: 'rethAPR',
+                sourceUrl: 'https://api.rocketpool.net/mainnet/reth/apr',
+                path: 'yearlyAPR',
                 isIbYield: true,
             },
             cbETH: {
@@ -238,6 +245,12 @@ export default <NetworkData>{
                 tokenAddress: '0xd3443ee1e91af28e5fb858fbd0d72a63ba8046e0',
                 sourceUrl: 'https://backend-arbitrum.gains.trade/apr',
                 path: 'collateralRewards.{symbol == "USDC"}.vaultApr',
+                isIbYield: true,
+            },
+            wUSDL: {
+                tokenAddress: '0x7751e2f4b8ae93ef6b79d86419d42fe3295a4559',
+                sourceUrl: 'https://usdl-apy.replit.app/usdl_apy',
+                path: 'apy',
                 isIbYield: true,
             },
         },

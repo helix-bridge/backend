@@ -23,8 +23,8 @@ export default <NetworkData>{
     eth: {
         address: '0x0000000000000000000000000000000000001010',
         addressFormatted: '0x0000000000000000000000000000000000001010',
-        symbol: 'MATIC',
-        name: 'Matic',
+        symbol: 'POL',
+        name: 'Polygon Token',
     },
     weth: {
         address: '0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270',
@@ -35,8 +35,8 @@ export default <NetworkData>{
         platformId: 'polygon-pos',
         excludedTokenAddresses: [],
     },
-    rpcUrl: env.ALCHEMY_API_KEY
-        ? `https://polygon-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=polygon&dkey=${env.DRPC_API_KEY}`
         : 'https://1rpc.io/matic',
     rpcMaxBlockRange: 2000,
     protocolToken: 'bal',

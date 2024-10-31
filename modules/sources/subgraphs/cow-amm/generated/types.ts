@@ -1252,6 +1252,7 @@ export type Swap = {
     __typename?: 'Swap';
     blockNumber: Scalars['BigInt'];
     blockTimestamp: Scalars['BigInt'];
+    expectedAmountOut?: Maybe<Scalars['BigDecimal']>;
     id: Scalars['Bytes'];
     logIndex: Scalars['BigInt'];
     pool: Pool;
@@ -1289,6 +1290,14 @@ export type Swap_Filter = {
     blockTimestamp_lte?: InputMaybe<Scalars['BigInt']>;
     blockTimestamp_not?: InputMaybe<Scalars['BigInt']>;
     blockTimestamp_not_in?: InputMaybe<Array<Scalars['BigInt']>>;
+    expectedAmountOut?: InputMaybe<Scalars['BigDecimal']>;
+    expectedAmountOut_gt?: InputMaybe<Scalars['BigDecimal']>;
+    expectedAmountOut_gte?: InputMaybe<Scalars['BigDecimal']>;
+    expectedAmountOut_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
+    expectedAmountOut_lt?: InputMaybe<Scalars['BigDecimal']>;
+    expectedAmountOut_lte?: InputMaybe<Scalars['BigDecimal']>;
+    expectedAmountOut_not?: InputMaybe<Scalars['BigDecimal']>;
+    expectedAmountOut_not_in?: InputMaybe<Array<Scalars['BigDecimal']>>;
     id?: InputMaybe<Scalars['Bytes']>;
     id_contains?: InputMaybe<Scalars['Bytes']>;
     id_gt?: InputMaybe<Scalars['Bytes']>;
@@ -1477,6 +1486,7 @@ export type Swap_Filter = {
 export enum Swap_OrderBy {
     BlockNumber = 'blockNumber',
     BlockTimestamp = 'blockTimestamp',
+    ExpectedAmountOut = 'expectedAmountOut',
     Id = 'id',
     LogIndex = 'logIndex',
     Pool = 'pool',
@@ -1829,6 +1839,7 @@ export type CowAmmPoolFragment = {
     blockNumber: string;
     blockTimestamp: string;
     transactionHash: string;
+    swapFee: string;
     swapsCount: string;
     holdersCount: string;
     weights: Array<string>;
@@ -1842,6 +1853,7 @@ export type CowAmmPoolFragment = {
         address: string;
         decimals: number;
         balance: string;
+        weight: string;
     }>;
 };
 
@@ -1865,6 +1877,7 @@ export type PoolsQuery = {
         blockNumber: string;
         blockTimestamp: string;
         transactionHash: string;
+        swapFee: string;
         swapsCount: string;
         holdersCount: string;
         weights: Array<string>;
@@ -1878,8 +1891,10 @@ export type PoolsQuery = {
             address: string;
             decimals: number;
             balance: string;
+            weight: string;
         }>;
     }>;
+    _meta?: { __typename?: '_Meta_'; block: { __typename?: '_Block_'; number: number } } | null | undefined;
 };
 
 export type SnapshotsQueryVariables = Exact<{
@@ -2003,6 +2018,7 @@ export const CowAmmPoolFragmentDoc = gql`
         blockNumber
         blockTimestamp
         transactionHash
+        swapFee
         swapsCount
         holdersCount
         weights
@@ -2014,6 +2030,7 @@ export const CowAmmPoolFragmentDoc = gql`
             address
             decimals
             balance
+            weight
         }
     }
 `;
@@ -2124,6 +2141,11 @@ export const PoolsDocument = gql`
             block: $block
         ) {
             ...CowAmmPool
+        }
+        _meta {
+            block {
+                number
+            }
         }
     }
     ${CowAmmPoolFragmentDoc}

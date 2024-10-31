@@ -13,7 +13,7 @@ export default <NetworkData>{
     subgraphs: {
         startDate: '2023-06-06',
         balancer: [
-            `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmeJY1ZjmuJVPvmVghZSuiSxEx2a9kmpKnjr4Qw5hNdpLU`,
+            `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmNudbtVu2eACfxNpFz37MVwKxxHPh1Lg5MzFKwQZG2xsU`,
         ],
         beetsBar: 'https://',
         blocks: 'https://api.studio.thegraph.com/query/48427/avalanche-blocks/version/latest',
@@ -35,8 +35,8 @@ export default <NetworkData>{
         platformId: 'avalanche',
         excludedTokenAddresses: [],
     },
-    rpcUrl: env.ALCHEMY_API_KEY
-        ? `https://avax-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=avalanche&dkey=${env.DRPC_API_KEY}`
         : 'https://rpc.ankr.com/avalanche',
     rpcMaxBlockRange: 2000,
     protocolToken: 'bal',
@@ -47,6 +47,9 @@ export default <NetworkData>{
         address: '0xc128a9954e6c874ea3d62ce62b468ba073093f25',
         bptAddress: '0x5c6ee304399dbdb9c8ef030ab642b10820db8f56',
         delegationProxy: '0x0c6052254551eae3ecac77b01dfcf1025418828f',
+    },
+    gyro: {
+        config: '0x8a5eb9a5b726583a213c7e4de2403d2dfd42c8a6',
     },
     balancer: {
         v2: {
@@ -103,6 +106,8 @@ export default <NetworkData>{
                         aTokenAddress: '0x6d80113e533a2c0fe82eabd35f1875dcea89ea97',
                         wrappedTokens: {
                             stataAvaWAVAX: '0xa291ae608d8854cdbf9838e28e9badcf10181669',
+                            stataAvaWAVAX2: '0x6a02c7a974f1f13a67980c80f774ec1d2ed8f98d',
+
                         },
                     },
                     wBTC: {

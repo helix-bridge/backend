@@ -24,6 +24,7 @@ fragment VaultPool on Pool {
         nestedPool {
             id
         }
+        scalingFactor
     }
     rateProviders {
         address
@@ -45,6 +46,12 @@ fragment VaultPool on Pool {
         shouldCallAfterRemoveLiquidity
         shouldCallBeforeRemoveLiquidity
         shouldCallComputeDynamicSwapFee
+    }
+    liquidityManagement {
+        disableUnbalancedLiquidity
+        enableAddLiquidityCustom
+        enableDonation
+        enableRemoveLiquidityCustom
     }
 }
 

@@ -124,18 +124,22 @@ class SorPathService implements SwapService {
                 input.callDataInput,
             );
         } catch (err: any) {
-            console.log(`Error Retrieving QuerySwap`, err);
-            Sentry.captureException(err.message, {
-                tags: {
-                    service: 'sorV2 query swap',
-                    tokenIn: input.tokenIn,
-                    tokenOut: input.tokenOut,
-                    swapAmount: formatUnits(input.swapAmount.amount, input.swapAmount.token.decimals),
-                    swapType: input.swapType,
-                    chain: input.chain,
-                },
-            });
-            return emptyResponse;
+            if (err.message === 'SOR queryBatchSwap failed') {
+                throw new Error('SOR queryBatchSwap failed');
+            } else {
+                console.log(`SOR queryBatchSwap failed`, err);
+                Sentry.captureException(err.message, {
+                    tags: {
+                        service: 'sorV2 query swap',
+                        tokenIn: input.tokenIn,
+                        tokenOut: input.tokenOut,
+                        swapAmount: formatUnits(input.swapAmount.amount, input.swapAmount.token.decimals),
+                        swapType: input.swapType,
+                        chain: input.chain,
+                    },
+                });
+                return emptyResponse;
+            }
         }
     }
 
@@ -222,8 +226,13 @@ class SorPathService implements SwapService {
             })),
             swapKind,
         });
+
         if (queryFirst) {
-            queryOutput = await sdkSwap.query(AllNetworkConfigsKeyedOnChain[chain].data.rpcUrl);
+            try {
+                queryOutput = await sdkSwap.query(AllNetworkConfigsKeyedOnChain[chain].data.rpcUrl);
+            } catch (error) {
+                throw new Error('SOR queryBatchSwap failed');
+            }
             if (swapKind === SwapKind.GivenIn) {
                 updatedAmount = (queryOutput as ExactInQueryOutput).expectedAmountOut;
             } else {
@@ -260,10 +269,7 @@ class SorPathService implements SwapService {
                     callData: callDataExactIn.callData,
                     to: callDataExactIn.to,
                     value: callDataExactIn.value.toString(),
-                    minAmountOutRaw: formatUnits(
-                        callDataExactIn.minAmountOut.amount,
-                        callDataExactIn.minAmountOut.token.decimals,
-                    ),
+                    minAmountOutRaw: callDataExactIn.minAmountOut.amount.toString(),
                 };
             } else {
                 const callDataExactOut = sdkSwap.buildCall({
@@ -282,10 +288,7 @@ class SorPathService implements SwapService {
                     callData: callDataExactOut.callData,
                     to: callDataExactOut.to,
                     value: callDataExactOut.value.toString(),
-                    maxAmountInRaw: formatUnits(
-                        callDataExactOut.maxAmountIn.amount,
-                        callDataExactOut.maxAmountIn.token.decimals,
-                    ),
+                    maxAmountInRaw: callDataExactOut.maxAmountIn.amount.toString(),
                 };
             }
         }
@@ -314,8 +317,8 @@ class SorPathService implements SwapService {
         for (const path of paths) {
             // paths used as input for b-sdk for client
             sorPaths.push({
-                vaultVersion: 2,
-                protocolVersion: 2,
+                protocolVersion,
+                vaultVersion: protocolVersion,
                 inputAmountRaw: path.inputAmount.amount.toString(),
                 outputAmountRaw: path.outputAmount.amount.toString(),
                 tokens: path.tokens.map((token) => ({
@@ -334,8 +337,8 @@ class SorPathService implements SwapService {
         const effectivePriceReversed = outputAmount.divDownFixed(inputAmount.scale18);
 
         return {
-            vaultVersion: 2,
-            protocolVersion: 2,
+            protocolVersion,
+            vaultVersion: protocolVersion,
             paths: sorPaths,
             swapType,
             swaps: this.mapSwaps(paths, swapKind),
@@ -504,7 +507,7 @@ class SorPathService implements SwapService {
             if (!pool) throw new Error('Pool not found while mapping route');
             return [this.mapSingleSwap(paths[0], pool)];
         }
-        return paths.map((path) => this.mapBatchSwap(path, pools));
+        return paths.filter((path) => !path.isBuffer).map((path) => this.mapBatchSwap(path, pools));
     }
 
     private mapBatchSwap(path: PathWithAmount, pools: GqlPoolMinimal[]): GqlSorSwapRoute {

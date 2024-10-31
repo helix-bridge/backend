@@ -15,6 +15,7 @@ import { Reliquary } from '../../web3/types/Reliquary';
 import { UserStakedBalanceService, UserSyncUserBalanceInput } from '../user-types';
 import { networkContext } from '../../network/network-context.service';
 import { ReliquarySubgraphService } from '../../subgraphs/reliquary-subgraph/reliquary.service';
+import { BALANCES_SYNC_BLOCKS_MARGIN } from '../../../config';
 
 type ReliquaryPosition = {
     amount: BigNumber;
@@ -83,7 +84,7 @@ export class UserSyncReliquaryFarmBalanceService implements UserStakedBalanceSer
             (farm) => !networkContext.data.reliquary!.excludedFarmIds.includes(farm.pid.toString()),
         );
 
-        const startBlock = status.blockNumber + 1;
+        const startBlock = status.blockNumber - BALANCES_SYNC_BLOCKS_MARGIN;
         const endBlock =
             latestBlock - startBlock > networkContext.data.rpcMaxBlockRange
                 ? startBlock + networkContext.data.rpcMaxBlockRange
@@ -106,20 +107,6 @@ export class UserSyncReliquaryFarmBalanceService implements UserStakedBalanceSer
                 !networkContext.data.reliquary!.excludedFarmIds.includes(update.farmId.toString()) &&
                 update.amount !== '0.0',
         );
-
-        if (filteredAmountUpdates.length === 0) {
-            await prisma.prismaUserBalanceSyncStatus.update({
-                where: {
-                    type_chain: {
-                        type: 'RELIQUARY',
-                        chain: networkContext.chain,
-                    },
-                },
-                data: { blockNumber: endBlock },
-            });
-
-            return;
-        }
 
         await prismaBulkExecuteOperations(
             [
@@ -251,7 +238,7 @@ export class UserSyncReliquaryFarmBalanceService implements UserStakedBalanceSer
         const positions = relicPositions[1];
 
         const balance = positions
-            .filter((position) => position.poolId.toString() === poolId)
+            .filter((position) => position.poolId.toString() === staking.id.split('-')[1])
             .reduce((total, position) => total.add(position.amount), bn(0));
         const balanceFormatted = formatFixed(balance, 18);
 

@@ -33,5 +33,6 @@ export const prismaPoolFactory = PrismaPoolFactory.define(({ params }) => {
         tokens: prismaPoolTokenFactory.buildList(2),
         hookId: null,
         hook: params.hook as Hook ?? null,
+        liquidityManagement: {},
     };
 });

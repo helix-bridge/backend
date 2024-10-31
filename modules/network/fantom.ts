@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 import { DeploymentEnv, NetworkConfig, NetworkData } from './network-config-types';
 import { BoostedPoolAprService } from '../pool/lib/apr-data-sources/nested-pool-apr.service';
-import { SwapFeeAprService } from '../pool/lib/apr-data-sources/swap-fee-apr.service';
+import { SwapFeeFromEventsAprService } from '../pool/lib/apr-data-sources/';
 import { MasterchefFarmAprService } from '../pool/lib/apr-data-sources/fantom/masterchef-farm-apr.service';
 import { ReliquaryFarmAprService } from '../pool/lib/apr-data-sources/fantom/reliquary-farm-apr.service';
 import { UserSyncMasterchefFarmBalanceService } from '../user/lib/user-sync-masterchef-farm-balance.service';
@@ -23,7 +23,7 @@ export const fantomNetworkConfig: NetworkConfig = {
     poolAprServices: [
         new YbTokensAprService(fantomNetworkData.ybAprConfig, fantomNetworkData.chain.prismaId),
         new BoostedPoolAprService(),
-        new SwapFeeAprService(),
+        new SwapFeeFromEventsAprService(),
         new MasterchefFarmAprService(fantomNetworkData.beets!.address),
         new ReliquaryFarmAprService(fantomNetworkData.beets!.address),
         new BeetswarsGaugeVotingAprService(),
@@ -40,7 +40,7 @@ export const fantomNetworkConfig: NetworkConfig = {
     services: {
         balancerSubgraphService: new BalancerSubgraphService(
             fantomNetworkData.subgraphs.balancer,
-            fantomNetworkData.chain.id,
+            fantomNetworkData.chain.prismaId,
         ),
     },
     /*
@@ -141,7 +141,7 @@ export const fantomNetworkConfig: NetworkConfig = {
         },
         // Refactored
         {
-            name: 'update-liquidity-24h-ago',
+            name: 'update-liquidity-24h-ago-v2',
             interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(5, 'minutes'),
         },
         {

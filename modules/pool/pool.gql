@@ -82,31 +82,12 @@ extend type Query {
 
 extend type Mutation {
     poolSyncAllPoolsFromSubgraph: [String!]!
-    poolSyncNewPoolsFromSubgraph: [String!]!
-    poolLoadOnChainDataForAllPools: String!
-    poolLoadOnChainDataForPoolsWithActiveUpdates: String!
     poolUpdateLiquidityValuesForAllPools: String!
-    poolUpdateVolumeAndFeeValuesForAllPools: String!
-    poolSyncSwapsForLast48Hours: String!
-    poolSyncSanityPoolData: String!
-    poolUpdateAprs(chain: GqlChain!): String!
-    poolSyncPoolAllTokensRelationship: String!
     poolReloadAllPoolAprs(chain: GqlChain!): String!
-    poolSyncTotalShares: String!
     poolReloadStakingForAllPools(stakingTypes: [GqlPoolStakingType!]!): String!
-    poolSyncStakingForPools: String!
-    poolUpdateLiquidity24hAgoForAllPools: String!
-    poolLoadSnapshotsForAllPools: String!
     poolLoadSnapshotsForPools(poolIds: [String!]!, reload: Boolean): String!
-    poolSyncLatestSnapshotsForAllPools(chain: GqlChain!): String!
     poolUpdateLifetimeValuesForAllPools: String!
-    poolInitializeSnapshotsForPool(poolId: String!): String!
-    poolSyncPool(poolId: String!): String!
-    poolReloadAllTokenNestedPoolIds: String!
-    poolBlackListAddPool(poolId: String!): String!
-    poolBlackListRemovePool(poolId: String!): String!
-    poolDeletePool(poolId: String!): String!
-    poolInitOnChainDataForAllPools: String!
+    poolLoadOnChainDataForAllPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
     poolReloadPools(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
     poolSyncAllCowSnapshots(chains: [GqlChain!]!): [GqlPoolMutationResult!]!
 }
@@ -161,6 +142,10 @@ type GqlPoolMinimal {
     Whether at least one token in this pool is considered an ERC4626 token.
     """
     hasErc4626: Boolean!
+    """
+    Whether at least one token in a nested pool is considered an ERC4626 token.
+    """
+    hasNestedErc4626: Boolean!
     """
     The name of the pool as per contract
     """
@@ -229,6 +214,35 @@ type GqlPoolMinimal {
     Hook assigned to a pool
     """
     hook: Hook
+    """
+    Liquidity management settings for v3 pools.
+    """
+    liquidityManagement: LiquidityManagement
+}
+
+"""
+Liquidity management settings for v3 pools.
+"""
+type LiquidityManagement {
+    """
+    Indicates whether this pool has disabled add and removes of unbalanced/non-proportional liquidity. Meaning it will only support proportional add and remove liquidity.
+    """
+    disableUnbalancedLiquidity: Boolean
+
+    """
+    Whether this pool support additional, custom add liquditiy operations apart from proportional, unbalanced and single asset.
+    """
+    enableAddLiquidityCustom: Boolean
+
+    """
+    Whether this pool support additional, custom remove liquditiy operations apart from proportional, unbalanced and single asset.
+    """
+    enableRemoveLiquidityCustom: Boolean
+
+    """
+    Indicates whether donation is enabled. Meaning you can send funds to the pool without receiving a BPT.
+    """
+    enableDonation: Boolean
 }
 
 """
@@ -433,6 +447,14 @@ type GqlPoolAggregator {
     Data specific to stable pools
     """
     amp: BigInt
+    """
+    Liquidity management settings for v3 pools.
+    """
+    liquidityManagement: LiquidityManagement
+    """
+    Hook assigned to a pool
+    """
+    hook: Hook
 }
 
 """
@@ -531,6 +553,22 @@ interface GqlPoolBase {
     List of tags assigned by the team based on external factors
     """
     tags: [String]
+    """
+    Liquidity management settings for v3 pools.
+    """
+    liquidityManagement: LiquidityManagement
+    """
+    Whether at least one token in this pool is considered an ERC4626 token.
+    """
+    hasErc4626: Boolean!
+    """
+    Whether at least one token in a nested pool is considered an ERC4626 token.
+    """
+    hasNestedErc4626: Boolean!
+    """
+    Hook assigned to a pool
+    """
+    hook: Hook
 }
 
 type GqlPoolDynamicData {
@@ -552,6 +590,7 @@ type GqlPoolDynamicData {
     swapEnabled: Boolean!
     #fields that change often
     totalShares: BigDecimal!
+    totalSupply: BigDecimal!
     #data that has USD values
     totalLiquidity: BigDecimal!
     volume24h: BigDecimal!
@@ -635,7 +674,7 @@ type GqlPoolWithdrawOption @deprecated(reason: "Removed without replacement") {
     tokenOptions: [GqlPoolToken!]!
 }
 
-enum GqlPoolNestingType {
+enum GqlPoolNestingType @deprecated(reason: "Removed without replacement") {
     NO_NESTING
     HAS_SOME_PHANTOM_BPT
     HAS_ONLY_PHANTOM_BPT
@@ -661,12 +700,16 @@ type GqlPoolWeighted implements GqlPoolBase {
     poolTokens: [GqlPoolTokenDetail!]!
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     """
     All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
     """
     tokens: [GqlPoolTokenUnion!]! @deprecated(reason: "Use poolTokens instead")
-    nestingType: GqlPoolNestingType!
+    nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
     staking: GqlPoolStaking
     type: GqlPoolType!
     version: Int!
@@ -695,6 +738,10 @@ type GqlPoolGyro implements GqlPoolBase {
     poolTokens: [GqlPoolTokenDetail!]!
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     alpha: String!
     beta: String!
@@ -718,7 +765,7 @@ type GqlPoolGyro implements GqlPoolBase {
     All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
     """
     tokens: [GqlPoolTokenUnion!]! @deprecated(reason: "Use poolTokens instead")
-    nestingType: GqlPoolNestingType!
+    nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
     staking: GqlPoolStaking
     version: Int!
 
@@ -753,6 +800,10 @@ type GqlPoolFx implements GqlPoolBase {
     poolTokens: [GqlPoolTokenDetail!]!
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     dynamicData: GqlPoolDynamicData!
     staking: GqlPoolStaking
@@ -783,12 +834,16 @@ type GqlPoolLiquidityBootstrapping implements GqlPoolBase {
     poolTokens: [GqlPoolTokenDetail!]!
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     """
     All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
     """
     tokens: [GqlPoolTokenUnion!]! @deprecated(reason: "Use poolTokens instead")
-    nestingType: GqlPoolNestingType!
+    nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
     staking: GqlPoolStaking
     type: GqlPoolType!
     version: Int!
@@ -816,6 +871,10 @@ type GqlPoolStable implements GqlPoolBase {
     poolTokens: [GqlPoolTokenDetail!]!
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     tokens: [GqlPoolToken!]! @deprecated(reason: "Use poolTokens instead")
     amp: BigInt!
@@ -846,6 +905,10 @@ type GqlPoolMetaStable implements GqlPoolBase {
     poolTokens: [GqlPoolTokenDetail!]!
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     tokens: [GqlPoolToken!]! @deprecated(reason: "Use poolTokens instead")
     amp: BigInt!
@@ -876,12 +939,16 @@ type GqlPoolComposableStable implements GqlPoolBase {
     poolTokens: [GqlPoolTokenDetail!]!
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     """
     All tokens of the pool. If it is a nested pool, the nested pool is expanded with its own tokens again.
     """
     tokens: [GqlPoolTokenUnion!]! @deprecated(reason: "Use poolTokens instead")
-    nestingType: GqlPoolNestingType!
+    nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
     amp: BigInt!
     staking: GqlPoolStaking
     bptPriceRate: BigDecimal!
@@ -912,6 +979,10 @@ type GqlPoolElement implements GqlPoolBase {
     tokens: [GqlPoolToken!]! @deprecated(reason: "Use poolTokens instead")
     categories: [GqlPoolFilterCategory]
     tags: [String]
+    liquidityManagement: LiquidityManagement
+    hasErc4626: Boolean!
+    hasNestedErc4626: Boolean!
+    hook: Hook
 
     #element specific fields
     unitSeconds: BigInt!
@@ -933,7 +1004,7 @@ type GqlPoolComposableStableNested @deprecated(reason: "use GqlPoolTokenDetail i
     factory: Bytes
     createTime: Int!
     tokens: [GqlPoolTokenComposableStableNestedUnion!]! @deprecated(reason: "Use poolTokens instead")
-    nestingType: GqlPoolNestingType!
+    nestingType: GqlPoolNestingType! @deprecated(reason: "Removed without replacement")
 
     totalShares: BigDecimal!
     totalLiquidity: BigDecimal!
@@ -1014,6 +1085,10 @@ type GqlPoolTokenDetail {
     The weight of the token in the pool if it is a weighted pool, null otherwise
     """
     weight: BigDecimal
+    """
+    Conversion factor used to adjust for token decimals for uniform precision in calculations. V3 only.
+    """
+    scalingFactor: BigDecimal
     """
     Indicates whether this token is a BPT and therefor has a nested pool.
     """
@@ -1108,6 +1183,10 @@ type GqlNestedPool {
     Price rate of the Balancer Pool Token (BPT).
     """
     bptPriceRate: BigDecimal!
+    """
+    Liquidity management settings for v3 pools.
+    """
+    liquidityManagement: LiquidityManagement
 }
 
 interface GqlPoolTokenBase @deprecated(reason: "Use GqlPoolTokenDetail instead") {
@@ -1158,15 +1237,6 @@ type GqlPoolTokenComposableStable implements GqlPoolTokenBase @deprecated(reason
     totalBalance: BigDecimal!
 
     pool: GqlPoolComposableStableNested!
-}
-
-type GqlPoolStableComposablePoolData {
-    id: ID!
-    address: String!
-    symbol: String!
-    tokens: [GqlPoolToken!]!
-    totalSupply: String!
-    balance: String!
 }
 
 type GqlPoolApr @deprecated(reason: "Use GqlPoolApr instead") {
@@ -1248,6 +1318,7 @@ input GqlPoolFilter {
     userAddress: String
     protocolVersionIn: [Int!]
     minTvl: Float
+    hasHook: Boolean
 }
 
 type GqlPoolTokenExpanded {
@@ -1293,9 +1364,24 @@ type GqlPoolBatchSwap {
     swaps: [GqlPoolBatchSwapSwap!]!
 }
 
+type TokenForBatchSwapPool {
+    address: String!
+    isNested: Boolean!
+    isPhantomBpt: Boolean!
+    weight: BigDecimal
+}
+
+type PoolForBatchSwap {
+    id: String!
+    name: String!
+    type: GqlPoolType!
+    symbol: String!
+    allTokens: [TokenForBatchSwapPool!]
+}
+
 type GqlPoolBatchSwapSwap {
     id: ID!
-    pool: GqlPoolMinimal!
+    pool: PoolForBatchSwap!
     userAddress: String!
     tokenIn: String!
     tokenOut: String!
@@ -1383,7 +1469,19 @@ enum GqlPoolAprItemType {
     """
     Represents the swap fee APR in a pool.
     """
-    SWAP_FEE
+    SWAP_FEE @deprecated(reason: "Use SWAP_FEE_24H instead")
+    """
+    Swap fee APR based on data from the last 24h
+    """
+    SWAP_FEE_24H
+    """
+    Swap fee APR based on data from the last 7d
+    """
+    SWAP_FEE_7D
+    """
+    Swap fee APR based on data from the last 30d
+    """
+    SWAP_FEE_30D
     """
     Represents the yield from an IB (Interest-Bearing) asset APR in a pool.
     """
@@ -1427,7 +1525,19 @@ enum GqlPoolAprItemType {
     """
     Cow AMM specific APR
     """
-    SURPLUS
+    SURPLUS @deprecated(reason: "Use SURPLUS_24H instead")
+    """
+    Surplus APR based on data from the last 24h
+    """
+    SURPLUS_24H
+    """
+    Surplus APR based on data from the last 7d
+    """
+    SURPLUS_7D
+    """
+    Surplus APR based on data from the last 30d
+    """
+    SURPLUS_30D
 }
 
 type GqlBalancePoolAprItem {

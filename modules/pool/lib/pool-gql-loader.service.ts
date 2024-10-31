@@ -36,19 +36,12 @@ import {
     GqlPoolFilterCategory,
     HookData,
     GqlPoolAggregator,
+    LiquidityManagement,
 } from '../../../schema';
 import { isSameAddress } from '@balancer-labs/sdk';
-import _, { has, map } from 'lodash';
+import _ from 'lodash';
 import { prisma } from '../../../prisma/prisma-client';
-import {
-    Chain,
-    Prisma,
-    PrismaPoolAprType,
-    PrismaPriceRateProviderData,
-    PrismaTokenTypeOption,
-    PrismaUserStakedBalance,
-    PrismaUserWalletBalance,
-} from '@prisma/client';
+import { Chain, Prisma, PrismaPoolAprType, PrismaUserStakedBalance, PrismaUserWalletBalance } from '@prisma/client';
 import { isWeightedPoolV2 } from './pool-utils';
 import { networkContext } from '../../network/network-context.service';
 import { fixedNumber } from '../../view-helpers/fixed-number';
@@ -58,6 +51,9 @@ import { SanityContentService } from '../../content/sanity-content.service';
 import { ElementData, FxData, GyroData, StableData } from '../subgraph-mapper';
 import { ZERO_ADDRESS } from '@balancer/sdk';
 import { tokenService } from '../../token/token.service';
+
+const isToken = (text: string) => text.match(/^0x[0-9a-fA-F]{40}$/);
+const isPoolId = (text: string) => isToken(text) || text.match(/^0x[0-9a-fA-F]{64}$/);
 
 export class PoolGqlLoaderService {
     public async getPool(id: string, chain: Chain, userAddress?: string): Promise<GqlPoolUnion> {
@@ -92,7 +88,7 @@ export class PoolGqlLoaderService {
         return mappedPool;
     }
 
-    private async enrichWithUnderlyingTokenData(mappedPool: GqlPoolUnion) {
+    private async enrichWithUnderlyingTokenData(mappedPool: GqlPoolUnion | GqlPoolAggregator) {
         for (const token of mappedPool.poolTokens) {
             if (token.isErc4626) {
                 const prismaToken = await prisma.prismaToken.findUnique({
@@ -104,9 +100,12 @@ export class PoolGqlLoaderService {
                         mappedPool.chain,
                     );
                     token.underlyingToken = underlyingTokenDefinition;
-                    mappedPool.displayTokens.push();
+                    if ((mappedPool as GqlPoolUnion).displayTokens) {
+                        (mappedPool as GqlPoolUnion).displayTokens.push();
+                    }
                 }
             }
+
             if (token.hasNestedPool) {
                 for (const nestedToken of token.nestedPool!.tokens) {
                     if (nestedToken.isErc4626) {
@@ -126,7 +125,7 @@ export class PoolGqlLoaderService {
         }
     }
 
-    private async enrichWithRateproviderData(mappedPool: GqlPoolUnion) {
+    private async enrichWithRateproviderData(mappedPool: GqlPoolUnion | GqlPoolAggregator) {
         for (const token of mappedPool.poolTokens) {
             if (token.priceRateProvider && token.priceRateProvider !== ZERO_ADDRESS) {
                 const rateproviderData = await prisma.prismaPriceRateProviderData.findUnique({
@@ -187,11 +186,29 @@ export class PoolGqlLoaderService {
 
         const pools = await prisma.prismaPool.findMany({
             ...this.mapQueryArgsToPoolQuery(args),
+            where: {
+                ...this.mapQueryArgsToPoolQuery(args).where,
+                dynamicData: {
+                    swapEnabled: true,
+                    isPaused: false,
+                    isInRecoveryMode: false,
+                },
+            },
             include: {
                 ...this.getPoolInclude(),
             },
         });
-        return pools.map((pool) => this.mapPoolToAggregatorPool(pool));
+        const gqlPools = pools.map((pool) => this.mapPoolToAggregatorPool(pool));
+
+        for (const mappedPool of gqlPools) {
+            // load rate provider data into PoolTokenDetail model
+            await this.enrichWithRateproviderData(mappedPool);
+
+            // load underlying token info into PoolTokenDetail and GqlPoolTokenDisplay
+            await this.enrichWithUnderlyingTokenData(mappedPool);
+        }
+
+        return gqlPools;
     }
 
     public async getPools(args: QueryPoolGetPoolsArgs): Promise<GqlPoolMinimal[]> {
@@ -254,6 +271,7 @@ export class PoolGqlLoaderService {
     ): GqlPoolMinimal {
         return {
             ...pool,
+            liquidityManagement: (pool.liquidityManagement as LiquidityManagement) || undefined,
             hook:
                 (pool.hook &&
                     pool.hook.dynamicData && {
@@ -272,6 +290,9 @@ export class PoolGqlLoaderService {
             categories: pool.categories as GqlPoolFilterCategory[],
             tags: pool.categories,
             hasErc4626: pool.allTokens.some((token) => token.token.types.some((type) => type.type === 'ERC4626')),
+            hasNestedErc4626: pool.allTokens.some((token) =>
+                token.nestedPool?.allTokens.some((token) => token.token.types.some((type) => type.type === 'ERC4626')),
+            ),
         };
     }
 
@@ -386,8 +407,13 @@ export class PoolGqlLoaderService {
             };
         }
 
-        const where = args.where;
-        const textSearch = args.textSearch ? { contains: args.textSearch, mode: 'insensitive' as const } : undefined;
+        const where = args.where || {};
+        let textSearch: Prisma.StringFilter | undefined;
+        if (args.textSearch && isPoolId(args.textSearch)) {
+            where.idIn = [args.textSearch];
+        } else if (args.textSearch) {
+            textSearch = { contains: args.textSearch, mode: 'insensitive' as const };
+        }
 
         const allTokensFilter = [];
         where?.tokensIn?.forEach((token) => {
@@ -506,6 +532,11 @@ export class PoolGqlLoaderService {
                       }
                     : {}),
             },
+            ...(where?.hasHook !== undefined && where.hasHook
+                ? { hook: { isNot: null } }
+                : where?.hasHook !== undefined && !where.hasHook
+                ? { hook: { is: null } }
+                : {}),
         };
 
         if (!textSearch) {
@@ -559,6 +590,14 @@ export class PoolGqlLoaderService {
             dynamicData: this.getPoolDynamicData(pool),
             poolTokens: pool.tokens.map((token) => this.mapPoolToken(token, token.nestedPool !== null)),
             vaultVersion: poolWithoutTypeData.protocolVersion,
+            liquidityManagement: (pool.liquidityManagement as LiquidityManagement) || undefined,
+            hook:
+                (pool.hook &&
+                    pool.hook.dynamicData && {
+                        ...pool.hook,
+                        dynamicData: pool.hook.dynamicData as HookData,
+                    }) ||
+                undefined,
         };
 
         switch (pool.type) {
@@ -645,6 +684,11 @@ export class PoolGqlLoaderService {
                         dynamicData: pool.hook.dynamicData as HookData,
                     }) ||
                 undefined,
+            liquidityManagement: (pool.liquidityManagement as LiquidityManagement) || undefined,
+            hasErc4626: pool.allTokens.some((token) => token.token.types.some((type) => type.type === 'ERC4626')),
+            hasNestedErc4626: pool.allTokens.some((token) =>
+                token.nestedPool?.allTokens.some((token) => token.token.types.some((type) => type.type === 'ERC4626')),
+            ),
         };
 
         //TODO: may need to build out the types here still
@@ -785,6 +829,7 @@ export class PoolGqlLoaderService {
                 (type) => type.type === 'WHITE_LISTED' || type.type === 'PHANTOM_BPT' || type.type === 'BPT',
             ),
             isErc4626: poolToken.token.types.some((type) => type.type === 'ERC4626'),
+            scalingFactor: poolToken.scalingFactor,
         };
     }
 
@@ -796,6 +841,7 @@ export class PoolGqlLoaderService {
 
         return {
             ...nestedPool,
+            liquidityManagement: (nestedPool.liquidityManagement as LiquidityManagement) || undefined,
             totalLiquidity: `${totalLiquidity}`,
             totalShares: `${totalShares}`,
             nestedShares: `${totalShares * percentOfSupplyNested}`,
@@ -962,7 +1008,10 @@ export class PoolGqlLoaderService {
 
         const newAprItemsSchema = this.buildAprItems(pool);
 
-        const aprItems = pool.aprItems?.filter((item) => item.apr > 0 || (item.range?.max ?? 0 > 0)) || [];
+        const allAprItems = pool.aprItems?.filter((item) => item.apr > 0 || (item.range?.max ?? 0 > 0)) || [];
+        const aprItems = allAprItems.filter(
+            (item) => item.type !== 'SWAP_FEE_24H' && item.type !== 'SWAP_FEE_7D' && item.type !== 'SWAP_FEE_30D',
+        );
         const swapAprItems = aprItems.filter((item) => item.type == 'SWAP_FEE');
 
         // swap apr cannot have a range, so we can already sum it up
@@ -1061,6 +1110,7 @@ export class PoolGqlLoaderService {
             totalLiquidity: `${fixedNumber(totalLiquidity, 2)}`,
             totalLiquidity24hAgo: `${fixedNumber(totalLiquidity24hAgo, 2)}`,
             totalShares24hAgo,
+            totalSupply: pool.dynamicData?.totalShares || '0',
             fees24h: `${fixedNumber(fees24h, 2)}`,
             volume24h: `${fixedNumber(volume24h, 2)}`,
             surplus24h: `${fixedNumber(surplus24h, 2)}`,
@@ -1149,7 +1199,20 @@ export class PoolGqlLoaderService {
                                 apr: { __typename: 'GqlPoolAprTotal', total: `${item.apr}` },
                             }),
                         );
-                        const apr = _.sumBy(items, 'apr');
+                        let apr = 0;
+                        for (const item of items) {
+                            if (
+                                item.type === 'SWAP_FEE_24H' ||
+                                item.type === 'SWAP_FEE_7D' ||
+                                item.type === 'SWAP_FEE_30D' ||
+                                item.type === 'SURPLUS_24H' ||
+                                item.type === 'SURPLUS_7D' ||
+                                item.type === 'SURPLUS_30D'
+                            ) {
+                            } else {
+                                apr += item.apr;
+                            }
+                        }
                         const title = `${group.charAt(0) + group.slice(1).toLowerCase()} boosted APR`;
 
                         return {

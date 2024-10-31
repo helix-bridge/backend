@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { DeploymentEnv, NetworkConfig } from './network-config-types';
 import { tokenService } from '../token/token.service';
 import { BoostedPoolAprService } from '../pool/lib/apr-data-sources/nested-pool-apr.service';
-import { SwapFeeAprService } from '../pool/lib/apr-data-sources/swap-fee-apr.service';
+import { SwapFeeFromEventsAprService } from '../pool/lib/apr-data-sources/';
 import { GaugeAprService } from '../pool/lib/apr-data-sources/ve-bal-gauge-apr.service';
 import { UserSyncGaugeBalanceService } from '../user/lib/user-sync-gauge-balance.service';
 import { every } from '../../apps/scheduler/intervals';
@@ -11,6 +11,7 @@ import { env } from '../../apps/env';
 import { YbTokensAprService } from '../pool/lib/apr-data-sources/yb-tokens-apr.service';
 import { BalancerSubgraphService } from '../subgraphs/balancer-subgraph/balancer-subgraph.service';
 import config from '../../config';
+import { UserSyncAuraBalanceService } from '../user/lib/user-sync-aura-balance.service';
 
 export const fraxtalNetworkData = config.FRAXTAL;
 
@@ -21,14 +22,14 @@ export const fraxtalNetworkConfig: NetworkConfig = {
     poolAprServices: [
         new YbTokensAprService(fraxtalNetworkData.ybAprConfig, fraxtalNetworkData.chain.prismaId),
         new BoostedPoolAprService(),
-        new SwapFeeAprService(),
+        new SwapFeeFromEventsAprService(),
         new GaugeAprService(tokenService, [fraxtalNetworkData.bal!.address]),
     ],
-    userStakedBalanceServices: [new UserSyncGaugeBalanceService()],
+    userStakedBalanceServices: [new UserSyncGaugeBalanceService(), new UserSyncAuraBalanceService()],
     services: {
         balancerSubgraphService: new BalancerSubgraphService(
             fraxtalNetworkData.subgraphs.balancer,
-            fraxtalNetworkData.chain.id,
+            fraxtalNetworkData.chain.prismaId,
         ),
     },
     /*
@@ -66,7 +67,7 @@ export const fraxtalNetworkConfig: NetworkConfig = {
             interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(5, 'minutes'),
         },
         {
-            name: 'update-liquidity-24h-ago-for-all-pools',
+            name: 'update-liquidity-24h-ago-v2',
             interval: (env.DEPLOYMENT_ENV as DeploymentEnv) === 'canary' ? every(10, 'minutes') : every(5, 'minutes'),
         },
         {

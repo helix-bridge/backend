@@ -12,7 +12,9 @@ export default <NetworkData>{
     },
     subgraphs: {
         startDate: '2023-05-17',
-        balancer: [`https://api.studio.thegraph.com/query/24660/balancer-polygon-zk-v2/version/latest`],
+        balancer: [
+            `https://gateway-arbitrum.network.thegraph.com/api/${env.THEGRAPH_API_KEY_BALANCER}/deployments/id/QmVNcphdNjTCaJ4ammPtFzRyD4gmyNBomKcVFZ98RADpS1`,
+        ],
         beetsBar: 'https://',
         blocks: 'https://api.studio.thegraph.com/query/48427/bleu-polygon-zkevm-blocks/version/latest',
         gauge: `https://api.studio.thegraph.com/query/24660/balancer-gauges-polygon-zk/version/latest`,
@@ -33,8 +35,8 @@ export default <NetworkData>{
         platformId: 'polygon-zkevm',
         excludedTokenAddresses: [],
     },
-    rpcUrl: env.ALCHEMY_API_KEY
-        ? `https://polygonzkevm-mainnet.g.alchemy.com/v2/${env.ALCHEMY_API_KEY}`
+    rpcUrl: env.DRPC_API_KEY
+        ? `https://lb.drpc.org/ogrpc?network=polygon-zkevm&dkey=${env.DRPC_API_KEY}`
         : 'https://zkevm-rpc.com',
     rpcMaxBlockRange: 2000,
     protocolToken: 'bal',
@@ -89,8 +91,8 @@ export default <NetworkData>{
             },
             rETH: {
                 tokenAddress: '0xb23c20efce6e24acca0cef9b7b7aa196b84ec942',
-                sourceUrl: 'https://rocketpool.net/api/mainnet/payload',
-                path: 'rethAPR',
+                sourceUrl: 'https://api.rocketpool.net/mainnet/reth/apr',
+                path: 'yearlyAPR',
                 isIbYield: true,
             },
             ankrETH: {

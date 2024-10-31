@@ -1,5 +1,218 @@
 # backend
 
+## 1.22.0
+
+### Minor Changes
+
+-   0b445a9: Treehouse tETH APR handler
+
+### Patch Changes
+
+-   5b4b001: add erc4626 flags to base pool
+-   02e7ca8: adding hasNestedErc4626 flag
+-   64daeb6: filter buffers from hops in sor response
+-   a197c10: remove old sor lambda and add workaround for multiple paths
+-   cbbb4df: add hook data to basepool
+
+## 1.21.16
+
+### Patch Changes
+
+-   1f4fbc1: fix: missing hooks data
+-   35886a7: fix relic sync
+
+## 1.21.15
+
+### Patch Changes
+
+-   401987d: fix: add missing totalSharesNum column for COW_AMM pools
+
+## 1.21.14
+
+### Patch Changes
+
+-   0098dbf: fix: pool total aprs should exclude 7d,30d
+-   d3cf1e0: fix long term apr for legacy items
+
+## 1.21.13
+
+### Patch Changes
+
+-   0b56465: fix cow amm SG pool fetching
+
+## 1.21.12
+
+### Patch Changes
+
+-   27bb15a: fix: add an update to "totalSharesNum" column
+-   d021220: change reth apr source
+-   ade5959: adding surplus and swap APR based on 7d and 30d values
+-   9794d8d: refactor pool transformers, add scaling factors
+-   d71162a: fix: sync cow amm balances on adding new pools
+-   6bc68c9: adding balance fetching margin
+-   92cb5a4: update cow amm subgraphs
+-   af45007: add new fantom subgraph version
+-   6bf00c8: fix erc4626 data fetching
+-   4190058: fix: adding missing bpt token records
+-   6f18aab: update sepolia blocks subgraph and vault v3 abis
+-   a4f6220: use 10th deployment of v3
+-   303f3e0: fix: overwriting of subgraph data
+-   2afa4ba: changing sepolia blocks SG
+-   51aeb1c: expose bias and slope in vebal user snapshots
+
+## 1.21.11
+
+### Patch Changes
+
+-   6d70678: sync vebal user snapshots
+-   5249d64: fix SOR raw amounts
+
+## 1.21.10
+
+### Patch Changes
+
+-   025c43d: limit db data over-reading for batch swaps query (beets)
+
+## 1.21.9
+
+### Patch Changes
+
+-   0cf158a: remove yearn apr from fantom
+
+## 1.21.8
+
+### Patch Changes
+
+-   7df8cc6: fixing user sync balance for reliquary positions
+-   4a46b01: allow searching by pool ID
+-   1962da6: add enrichments to aggregator query
+-   eabb550: dvstETH-APR-mainnet
+-   a529b35: track last synced block for v3
+-   a5b85ad: 9th v3 deployment
+
+## 1.21.7
+
+### Patch Changes
+
+-   a159cc9: fix hardcoded protocolVersion return value in SOR paths
+-   127142c: fix protocol metrics
+
+## 1.21.6
+
+### Patch Changes
+
+-   4bd3844: rename polygon native asset from MATIC to POL
+-   33bac59: Add stataAvaWAVAX2 APR hanlder
+-   9d8e6de: add scalingfactor, liquidity mangement and default filters to aggregator query
+-   716e7f0: move swap service to actions
+-   92adb18: fix paused state parsing issue
+-   f613949: change hook filter to bool
+-   ebc0eaf: feat: allow stable pool routing for v3
+-   a7ed429: adding wUSDL apr on arbitrum
+
+## 1.21.5
+
+### Patch Changes
+
+-   fd5ea37: multicall request size tuning
+-   c0fc647: fix balance calculation
+
+## 1.21.4
+
+### Patch Changes
+
+-   90bc31a: fix pool token price query
+
+## 1.21.3
+
+### Patch Changes
+
+-   e33ff3a: populate prismaPoolSwap table until everything is migrated
+
+## 1.21.2
+
+### Patch Changes
+
+-   8532816: update cow subgraph on other chains
+
+## 1.21.1
+
+### Patch Changes
+
+-   3c6840e: make v2 sync work with nested pool creation in the same block
+-   a6e8e1a: update cow subgraph for mainnet
+
+## 1.21.0
+
+### Minor Changes
+
+-   19abfd7: adding liquidity management json
+-   56b06a5: adding pool actions for v2
+
+### Patch Changes
+
+-   8aacde1: use cow_amm type selector for syncing actions
+-   e96b9be: use bigint in tokenpair sync
+-   056c32d: fix weth address for sepolia
+-   462b6d9: add liquidity mangement to pool list query
+-   39f2e4a: enable v2 syncs for sepolia
+
+## 1.20.10
+
+### Patch Changes
+
+-   53d8445: sync all token metadata from tokenlist
+
+## 1.20.9
+
+### Patch Changes
+
+-   44ca026: gyro config on avax
+
+## 1.20.8
+
+### Patch Changes
+
+-   64e55d4: add defillama yields as an APR adapter
+-   07e1f17: Fix Gyro2CLPPool implementations to account for token rates during swaps.
+
+## 1.20.7
+
+### Patch Changes
+
+-   5419dc5: avax subgraph deployment update
+-   bcd8189: Handle parsing errors causing the app to crash
+
+## 1.20.6
+
+### Patch Changes
+
+-   0cb9214: adding Aave lUSD and crvUSD APRs
+-   1c9aa5b: use default rpc url for fetching svEth APR data
+-   a0d5b42: use subgraph deployment if for zkevm
+-   dd3e100: Enable sdBal stable pool.
+
+## 1.20.5
+
+### Patch Changes
+
+-   0ab785d: fetch token rates for gyro2 pools
+
+## 1.20.4
+
+### Patch Changes
+
+-   14b6f71: adding aura balance tracking to fraxtal
+-   3fb6c32: change RPCs to dRPC
+
+## 1.20.3
+
+### Patch Changes
+
+-   6c67ceb: SOR shouldn't be using all static pools
+-   c64e675: handle queryBatchSwap errors
+-   6c67ceb: add sync latest fx prices as a task
+
 ## 1.20.2
 
 ### Patch Changes

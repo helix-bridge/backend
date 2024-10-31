@@ -13,9 +13,10 @@ import {
     updateSurplusAPRs,
 } from '../actions/cow-amm';
 import { Chain, PrismaLastBlockSyncedCategory } from '@prisma/client';
-import { updateVolumeAndFees } from '../actions/swap/update-volume-and-fees';
+import { updateVolumeAndFees } from '../actions/pool/update-volume-and-fees';
 import moment from 'moment';
 import { upsertBptBalances } from '../actions/cow-amm/upsert-bpt-balances';
+import { getLastSyncedBlock, upsertLastSyncedBlock } from '../actions/pool/last-synced-block';
 
 export function CowAmmController(tracer?: any) {
     const getSubgraphClient = (chain: Chain) => {
@@ -38,8 +39,7 @@ export function CowAmmController(tracer?: any) {
          *
          * @param chainId
          */
-        async addPools(chainId: string) {
-            const chain = chainIdToChain[chainId];
+        async addPools(chain: Chain) {
             const subgraphClient = getSubgraphClient(chain);
             const newPools = await fetchNewPools(subgraphClient, chain);
             const viemClient = getViemClient(chain);
@@ -77,113 +77,72 @@ export function CowAmmController(tracer?: any) {
          *
          * @param chainId
          */
-        async syncPools(chainId: string) {
-            const chain = chainIdToChain[chainId];
+        async syncPools(chain: Chain) {
             const subgraphClient = getSubgraphClient(chain);
             const viemClient = getViemClient(chain);
 
-            // TODO: move prismaLastBlockSynced wrapping to an action
-            let fromBlock = (
-                await prisma.prismaLastBlockSynced.findFirst({
-                    where: {
-                        category: PrismaLastBlockSyncedCategory.COW_AMM_POOLS,
-                        chain,
-                    },
-                })
-            )?.blockNumber;
+            let lastSyncBlock = await getLastSyncedBlock(chain, PrismaLastBlockSyncedCategory.COW_AMM_POOLS);
 
-            if (!fromBlock) {
-                fromBlock = await prisma.prismaPoolEvent
-                    .findFirst({
-                        where: {
-                            chain,
-                            protocolVersion: 1,
-                        },
-                        orderBy: {
-                            blockNumber: 'desc',
-                        },
-                    })
-                    .then((pool) => pool?.blockNumber);
+            const fromBlock = lastSyncBlock + 1;
+            const toBlock = await viemClient.getBlockNumber();
 
-                if (fromBlock && fromBlock > 10) {
-                    fromBlock = fromBlock - 10; // Safety overlap
-                }
+            // no new blocks have been minted, needed for slow networks
+            if (fromBlock > toBlock) {
+                return [];
             }
 
             let poolsToSync: string[] = [];
-            let blockToSync: bigint;
 
-            if (fromBlock) {
-                const { changedPools, latestBlock } = await fetchChangedPools(viemClient, chain, fromBlock);
+            if (fromBlock > 1) {
+                const changedPools = await fetchChangedPools(viemClient, chain, fromBlock, Number(toBlock));
 
                 if (changedPools.length === 0) {
                     return [];
                 }
                 poolsToSync = changedPools;
-                blockToSync = latestBlock;
             } else {
                 poolsToSync = await prisma.prismaPool
                     .findMany({
                         where: {
                             chain,
-                            protocolVersion: 1,
+                            type: 'COW_AMM',
                         },
                         select: {
                             id: true,
                         },
                     })
                     .then((pools) => pools.map((pool) => pool.id));
-                blockToSync = await viemClient.getBlockNumber();
             }
 
-            await upsertPools(poolsToSync, viemClient, subgraphClient, chain, blockToSync);
+            await upsertPools(poolsToSync, viemClient, subgraphClient, chain, toBlock);
             await updateVolumeAndFees(chain, poolsToSync);
             await updateSurplusAPRs();
 
-            const toBlock = await viemClient.getBlockNumber();
-            await prisma.prismaLastBlockSynced.upsert({
-                where: {
-                    category_chain: {
-                        category: PrismaLastBlockSyncedCategory.COW_AMM_POOLS,
-                        chain,
-                    },
-                },
-                update: {
-                    blockNumber: Number(toBlock),
-                },
-                create: {
-                    category: PrismaLastBlockSyncedCategory.COW_AMM_POOLS,
-                    blockNumber: Number(toBlock),
-                    chain,
-                },
-            });
+            await upsertLastSyncedBlock(chain, PrismaLastBlockSyncedCategory.COW_AMM_POOLS, toBlock);
 
             return poolsToSync;
         },
-        async syncSnapshots(chainId: string) {
-            const chain = chainIdToChain[chainId];
+        async syncSnapshots(chain: Chain) {
             const subgraphClient = getSubgraphClient(chain);
             const timestamp = await syncSnapshots(subgraphClient, chain);
             return timestamp;
         },
-        async syncAllSnapshots(chainId: string) {
+        async syncAllSnapshots(chain: Chain) {
             // Run in loop until we end up at todays snapshot (also sync todays)
             let allSnapshotsSynced = false;
             let timestamp = 0;
             while (!allSnapshotsSynced) {
-                timestamp = await CowAmmController().syncSnapshots(chainId);
+                timestamp = await CowAmmController().syncSnapshots(chain);
                 allSnapshotsSynced = timestamp === moment().utc().startOf('day').unix();
             }
             return timestamp;
         },
-        async syncJoinExits(chainId: string) {
-            const chain = chainIdToChain[chainId];
+        async syncJoinExits(chain: Chain) {
             const subgraphClient = getSubgraphClient(chain);
             const entries = await syncJoinExits(subgraphClient, chain);
             return entries;
         },
-        async syncSwaps(chainId: string) {
-            const chain = chainIdToChain[chainId];
+        async syncSwaps(chain: Chain) {
             const subgraphClient = getSubgraphClient(chain);
             const swaps = await syncSwaps(subgraphClient, chain);
             const poolIds = swaps
@@ -195,8 +154,7 @@ export function CowAmmController(tracer?: any) {
             const aprs = await updateSurplusAPRs();
             return aprs;
         },
-        async updateVolumeAndFees(chainId: string) {
-            const chain = chainIdToChain[chainId];
+        async updateVolumeAndFees(chain: Chain) {
             const cowPools = await prisma.prismaPool.findMany({ where: { chain, type: 'COW_AMM' } });
             await updateVolumeAndFees(
                 chain,
@@ -204,8 +162,7 @@ export function CowAmmController(tracer?: any) {
             );
             return true;
         },
-        async syncBalances(chainId: string) {
-            const chain = chainIdToChain[chainId];
+        async syncBalances(chain: Chain) {
             const subgraphClient = getSubgraphClient(chain);
             await upsertBptBalances(subgraphClient, chain);
 
