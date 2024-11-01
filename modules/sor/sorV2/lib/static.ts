@@ -25,9 +25,9 @@ export async function sorGetPathsWithPools(
         // TODO: Once more hooks infrastructure exists, allow pools with hooks to be considered for routing
         // for now they are discarded.
         // Discard pools with hooks
-        if (prismaPool.hook !== null) {
+        /* if (prismaPool.hook !== null) {
             continue;
-        }
+        } */
         switch (prismaPool.type) {
             case 'WEIGHTED':
                 {
