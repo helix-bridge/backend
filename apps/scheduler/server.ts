@@ -17,6 +17,7 @@ export async function startSchedulerServer() {
         }
 
         for (const chainId of chainIds) {
+            if (chainId != env.DEFAULT_CHAIN_ID) continue;
             scheduleJobs(chainId);
             if (process.env.AWS_ALERTS === 'true') {
                 // start up time will be a bit slower
