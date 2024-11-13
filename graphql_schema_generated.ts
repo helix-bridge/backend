@@ -33,6 +33,7 @@ export const schema = gql`
         ARBITRUM
         AVALANCHE
         BASE
+        CRAB
         FANTOM
         FRAXTAL
         GNOSIS

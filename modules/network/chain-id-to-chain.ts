@@ -3,6 +3,7 @@ import { Chain } from '@prisma/client';
 export const chainIdToChain: { [id: string]: Chain } = {
     '1': Chain.MAINNET,
     '10': Chain.OPTIMISM,
+    '44': Chain.CRAB,
     '100': Chain.GNOSIS,
     '137': Chain.POLYGON,
     '250': Chain.FANTOM,

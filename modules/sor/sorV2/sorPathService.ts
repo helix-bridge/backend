@@ -164,6 +164,7 @@ class SorPathService implements SwapService {
                           maxNonBoostedPathDepth,
                       },
                   };
+
             const paths = await sorGetPathsWithPools(
                 tIn,
                 tOut,
@@ -173,6 +174,7 @@ class SorPathService implements SwapService {
                 protocolVersion,
                 config,
             );
+
             // if we dont find a path with depth 4, we try one more level.
             if (!paths && maxNonBoostedPathDepth < 5) {
                 // TODO: we should be able to refactor this 'retry' logic so it's configurable from outside instead of hardcoding it here
@@ -471,7 +473,7 @@ class SorPathService implements SwapService {
                     },
                     swapEnabled: true,
                     totalLiquidity: {
-                        gte: chain === 'SEPOLIA' ? 0 : 100,
+                        gte: chain === 'SEPOLIA' || chain === 'CRAB' ? 0 : 100,
                     },
                 },
                 id: {

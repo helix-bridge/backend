@@ -47,6 +47,7 @@ export type GqlChain =
     | 'ARBITRUM'
     | 'AVALANCHE'
     | 'BASE'
+    | 'CRAB'
     | 'FANTOM'
     | 'FRAXTAL'
     | 'GNOSIS'
