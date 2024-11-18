@@ -2,9 +2,12 @@ name: Release Darwinia
 
 on:
   push:
-    tags:
-      - "v*"
-  workflow_dispatch:
+    branches: 
+      - crab
+      - darwinia
+  #   tags:
+  #     - "v*"
+  # workflow_dispatch:
 
 
 env:
