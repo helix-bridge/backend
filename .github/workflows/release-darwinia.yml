@@ -38,8 +38,8 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/balancer-backend:sha-${{ steps.short-sha.outputs.sha }}
-            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/balancer-backend:staging
+            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:sha-${{ steps.short-sha.outputs.sha }}
+            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:staging
 
       - name: Build with tag
         uses: docker/build-push-action@v3
@@ -47,5 +47,5 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/balancer-backend:${{ steps.tag-name.outputs.tag }}
-            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}/balancer-backend:latest
+            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:${{ steps.tag-name.outputs.tag }}
+            ${{ env.DOCKER_REGISTRY }}/${{ github.repository }}:latest
