@@ -34,7 +34,7 @@ export default <NetworkData>{
         platformId: 'crab',
         excludedTokenAddresses: [],
     },
-    rpcUrl: 'http://g1.crab2.darwinia.network',
+    rpcUrl: 'http://g1.crab2.darwinia.network:9944',
     rpcMaxBlockRange: 5000,
     protocolToken: 'bal',
     bal: {
