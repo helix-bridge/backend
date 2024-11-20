@@ -34,7 +34,7 @@ export default <NetworkData>{
         platformId: 'crab',
         excludedTokenAddresses: [],
     },
-    rpcUrl: 'https://crab-rpc.itering.io',
+    rpcUrl: 'http://g1.crab2.darwinia.network',
     rpcMaxBlockRange: 5000,
     protocolToken: 'bal',
     bal: {
